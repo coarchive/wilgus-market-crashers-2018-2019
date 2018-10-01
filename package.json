@@ -1,0 +1,22 @@
+{
+  "name": "crasher",
+  "version": "0.0.0",
+  "description": "My best package",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/legodude17/crasher"
+  },
+  "keywords": [],
+  "author": "legodude17",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/legodude17/crasher/issues"
+  },
+  "homepage": "https://github.com/legodude17/crasher#readme",
+  "devDependencies": {
+    "eslint": "^5.6.1",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.14.0"
+  }
+}
