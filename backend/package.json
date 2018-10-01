@@ -1,0 +1,31 @@
+{
+  "name": "backend",
+  "version": "0.0.0",
+  "description": "My best package",
+  "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/legodude17/backend"
+  },
+  "keywords": [],
+  "author": "legodude17",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/legodude17/backend/issues"
+  },
+  "homepage": "https://github.com/legodude17/backend#readme",
+  "devDependencies": {
+    "@babel/core": "^7.1.2",
+    "@babel/preset-env": "^7.1.0",
+    "eslint": "^5.6.1",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.14.0",
+    "rollup": "^0.66.2",
+    "rollup-plugin-babel": "^4.1.0-0",
+    "rollup-plugin-node-resolve": "^3.4.0"
+  },
+  "scripts": {
+    "start": "rollup -cw & onchange src/**/*.js -- node ../dist/server.js"
+    "build": "rollup -c"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "frontend",
+  "version": "0.0.0",
+  "description": "My best package",
+  "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/legodude17/frontend"
+  },
+  "keywords": [],
+  "author": "legodude17",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/legodude17/frontend/issues"
+  },
+  "homepage": "https://github.com/legodude17/frontend#readme",
+  "devDependencies": {
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-preact": "^1.1.0",
+    "eslint": "^5.6.1",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-jsx-a11y": "^6.1.1",
+    "eslint-plugin-react": "^7.11.1",
+    "parcel-bundler": "^1.10.1"
+  },
+  "dependencies": {
+    "preact": "^8.3.1"
+  },
+  "scripts": {
+    "start": "parcel watch --out-dir='../dist'",
+    "build": "parcel build --out-dir='../dist'"
+  }
+}
