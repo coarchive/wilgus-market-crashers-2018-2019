@@ -1,1 +1,1 @@
-// ENTRYPOINT
+console.log('HI!');

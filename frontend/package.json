@@ -15,6 +15,7 @@
   },
   "homepage": "https://github.com/legodude17/frontend#readme",
   "devDependencies": {
+    "babel-core": "^6.26.3",
     "babel-preset-env": "^1.7.0",
     "babel-preset-preact": "^1.1.0",
     "eslint": "^5.6.1",
@@ -28,7 +29,7 @@
     "preact": "^8.3.1"
   },
   "scripts": {
-    "start": "parcel watch --out-dir='../dist'",
-    "build": "parcel build --out-dir='../dist'"
+    "start": "parcel watch --out-dir='../dist/public' index.html",
+    "build": "parcel build --out-dir='../dist/public' index.html"
   }
 }

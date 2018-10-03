@@ -18,8 +18,9 @@
     "go-out": "^0.3.0"
   },
   "scripts": {
-    "start": "(cd frontend && npm run build) && cd backend && npm start",
+    "start": "(cd frontend && npm start) & (cd backend && npm start)",
     "build": "(cd frontend && npm run build) & (cd backend && npm run build)",
     "push": "out --no-npm"
-  }
+  },
+  "dependencies": {}
 }
