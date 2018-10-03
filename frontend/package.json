@@ -18,24 +18,9 @@
     "babel-core": "^6.26.3",
     "babel-preset-env": "^1.7.0",
     "babel-preset-preact": "^1.1.0",
-    "eslint": "^5.6.1",
-    "eslint-config-airbnb": "^17.1.0",
-    "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-jsx-a11y": "^6.1.1",
-    "eslint-plugin-react": "^7.11.1",
-    "parcel-bundler": "^1.10.1"
-  },
-  "dependencies": {
-    "preact": "^8.3.1"
   },
   "scripts": {
-<<<<<<< HEAD
-    "start": "parcel watch --out-dir='../dist/public' src/index.jsx src/dashboard.jsx",
-    "build": "parcel build --out-dir='../dist/public' src/index.jsx src/dashboard.jsx",
-=======
-    "start": "npm run copy && parcel watch --out-dir='../dist/public' index.html",
-    "build": "npm run copy && parcel build --out-dir='../dist/public' index.html",
-    "copy": "cp ./startpage.html ../dist/public/"
->>>>>>> a753b57ad94957d13654106d34df442c8af55df5
+    "start": "parcel watch --out-dir='../dist/public' src/index.html src/dashboard.html",
+    "build": "parcel build --out-dir='../dist/public' src/index.html src/dashboard.html",
   }
 }
