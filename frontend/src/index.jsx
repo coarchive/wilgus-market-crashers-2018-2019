@@ -7,4 +7,4 @@ const App = () => (
   </div>
 );
 
-render(<App />, document.getElementById('body'));
+window.onload = () => render(<App />, document.getElementById('body'));
