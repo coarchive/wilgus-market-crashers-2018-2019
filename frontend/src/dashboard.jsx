@@ -2,8 +2,8 @@ import { h, render } from 'preact';
 
 const App = () => (
   <div id="app">
-    <span>Foobar!</span>
-    <a href="auth/google">Login</a>
+    <p>Welcome to the App!</p>
+    <a href="/logout">Logout</a>
   </div>
 );
 
