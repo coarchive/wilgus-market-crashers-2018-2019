@@ -26,6 +26,13 @@
     ],
     "no-param-reassign": "off",
     "no-plusplus": "off",
-    "no-underscore-dangle": "off"
-  }
+    "no-underscore-dangle": "off",
+    "react/react-in-jsx-scope": "off",
+    "react/destructuring-assignment": "off",
+    "no-unused-vars": ["error", {"varsIgnorePattern": "h"}],
+    "react/prop-types": "off"
+  },
+  "env": {
+    "browser": true
+    }
 }
