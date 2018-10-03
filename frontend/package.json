@@ -31,6 +31,6 @@
   "scripts": {
     "start": "npm run copy && parcel watch --out-dir='../dist/public' index.html",
     "build": "npm run copy && parcel build --out-dir='../dist/public' index.html",
-    "copy": "cp ./startpage.html ../dist/public"
+    "copy": "cp ./startpage.html ../dist/public/"
   }
 }
