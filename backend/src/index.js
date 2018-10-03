@@ -15,8 +15,6 @@ const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), '
 const publicURL = `${config.publicURL}:${config.port}`;
 const scope = [
   'profile',
-  'https://www.googleapis.com/auth/plus.login',
-  'https://www.googleapis.com/auth/plus.me',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile'
 ];
