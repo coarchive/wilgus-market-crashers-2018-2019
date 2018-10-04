@@ -1,6 +1,5 @@
 {
   "presets": [
-    "env",
-   "preact"
+    "env"
   ]
 }
