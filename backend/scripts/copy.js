@@ -19,8 +19,8 @@ fs.writeFileSync(
   path.join(dist, 'package.json'),
   JSON.stringify({
     dependencies: deps,
-    name: 'aoijfsoijf',
-    version: '999999.999999.99999'
+    name: 'LOL, you have to compile the server',
+    version: '0.0.1'
   })
 );
 

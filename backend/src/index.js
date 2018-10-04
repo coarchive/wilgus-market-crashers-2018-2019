@@ -81,7 +81,7 @@ app.get('/auth/google', passport.authenticate('google', { scope }));
 app.get('/auth/google/callback',
   passport.authenticate('google', { scopes: ['profile'], failureRedirect: '/login' }),
   (req, res) => {
-    res.redirect('/index.html');
+    res.redirect('/dashboard.html');
   });
 
 app.get('/api/user', (req, res) => {
@@ -141,7 +141,7 @@ app.get('/', (req, res) => res.redirect('startpage.html'));
 
 app.get('/logout', (req, res) => {
   req.logout();
-  res.redirect('startpage.html');
+  res.redirect('index.html');
 });
 
 app.listen(config.port, () => console.log('Ready!'));
