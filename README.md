@@ -1,2 +1,2 @@
 # crasher
-> My best package
+> A market crasher thingy

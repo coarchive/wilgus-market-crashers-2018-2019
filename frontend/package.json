@@ -17,7 +17,7 @@
   "devDependencies": {
     "babel-core": "^6.26.3",
     "babel-preset-env": "^1.7.0",
-    "babel-preset-preact": "^1.1.0",
+    "babel-preset-preact": "^1.1.0"
   },
   "scripts": {
     "start": "npm run copy && parcel watch --cache-dir='../dist/.cache' --out-dir='../dist/public' index.html",

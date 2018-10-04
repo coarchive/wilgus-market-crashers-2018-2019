@@ -18,17 +18,10 @@
     "go-out": "^0.3.0"
   },
   "scripts": {
-<<<<<<< HEAD
     "start": "mkdir -p dist/public && (cd frontend && npm start) & (cd backend && npm start)",
     "build": "mkdir -p dist/public && (cd frontend && npm run build) & (cd backend && npm run build)",
     "push": "out --no-npm",
-    "clean": "rm -rf dist/"
-=======
-    "start": "(cd frontend && npm start) & (cd backend && npm start)",
-    "build": "(cd frontend && npm run build) & (cd backend && npm run build)",
-    "push": "out --no-npm",
-    "purge": "rm -rf dist"
->>>>>>> 126f8d6d8200a4a9786b4b56bbe1c97b08213fb8
+    "purge": "rm -rf dist/"
   },
   "dependencies": {}
 }

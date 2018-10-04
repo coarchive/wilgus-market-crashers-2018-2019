@@ -135,6 +135,28 @@ app.get('/api/buy/:ticker', (req, res) => {
     res.status(401).send('Unauthorized');
   }
   const { ticker } = req.params;
+  const amount = req.query.amount == null ? 1 : +req.query.amount;
+  let stock;
+  iex.stockPrice(ticker)
+    .then(price => {
+      const onMargin = req.user.money < price * amount;
+      if (!req.user.stocks) req.user.stocks = [];
+      stock = {
+        ticker,
+        price,
+        amount,
+        onMargin
+      };
+      req.user.stocks.push(stock);
+      return users.put(req.user);
+    })
+    .then(() => res.send(stock))
+    .catch(err => {
+      if (err.statusCode) {
+        return res.status(err.statusCode).send(err.statusText || 'External server error');
+      }
+      return res.status(500).send('Internal server error');
+    });
 });
 
 app.get('/', (req, res) => res.redirect('startpage.html'));
