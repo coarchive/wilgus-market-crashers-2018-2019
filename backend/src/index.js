@@ -7,9 +7,12 @@ import path from 'path';
 import fs from 'fs';
 import PouchDB from 'pouchdb';
 import { google } from 'googleapis';
+import fetch from 'node-fetch';
+import { IEXClient } from 'iex-api';
 
 const app = express();
 const users = new PouchDB('users');
+const iex = new IEXClient(fetch);
 
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
 const publicURL = `${config.publicURL}:${config.port}`;
@@ -56,7 +59,9 @@ passport.use(new GoogleStrategy({
           name: profile.displayName,
           tokens: {
             accessToken, refreshToken
-          }
+          },
+          stocks: [],
+          money: 0
         };
         people.people.get({
           resourceName: 'people/me',
@@ -81,10 +86,55 @@ app.get('/auth/google/callback',
 
 app.get('/api/user', (req, res) => {
   if (req.user) {
-    res.send(JSON.stringify(req.user));
+    res.send(req.user);
   } else {
     res.status(401).send('Unauthorized');
   }
+});
+
+app.get('/api/stock/:ticker', (req, res) => {
+  const includeChart = req.query.chart == null ? false : Boolean(req.query.chart);
+  const includeNews = req.query.news == null ? false : Boolean(req.query.news);
+  const { ticker } = req.params;
+  if (!ticker || ticker !== ticker.toString()) {
+    res.status(400).send('Invalid or missing ticker');
+    return;
+  }
+  const stock = {};
+  iex.stockCompany(ticker)
+    .then(company => {
+      stock.company = company;
+      return iex.stockPrice(ticker);
+    })
+    .then(price => {
+      stock.price = price;
+      return includeChart ? iex.stockChart(ticker, '1m') : false;
+    })
+    .then(chart => {
+      if (chart) {
+        stock.chart = chart;
+      }
+      return includeNews ? iex.stockNews(ticker, 2) : false;
+    })
+    .then(news => {
+      if (news) {
+        stock.news = news;
+      }
+      res.send(stock);
+    })
+    .catch(err => {
+      if (err.statusCode) {
+        return res.status(err.statusCode).send(err.statusText || 'External server error');
+      }
+      return res.status(500).send('Internal server error');
+    });
+});
+
+app.get('/api/buy/:ticker', (req, res) => {
+  if (!req.user) {
+    res.status(401).send('Unauthorized');
+  }
+  const { ticker } = req.params;
 });
 
 app.get('/', (req, res) => res.redirect('startpage.html'));

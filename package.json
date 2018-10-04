@@ -20,7 +20,8 @@
   "scripts": {
     "start": "mkdir -p dist/public && (cd frontend && npm start) & (cd backend && npm start)",
     "build": "mkdir -p dist/public && (cd frontend && npm run build) & (cd backend && npm run build)",
-    "push": "out --no-npm"
+    "push": "out --no-npm",
+    "clean": "rm -rf dist/"
   },
   "dependencies": {}
 }
