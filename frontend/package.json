@@ -15,13 +15,12 @@
   },
   "homepage": "https://github.com/legodude17/frontend#readme",
   "devDependencies": {
-    "babel-core": "^6.26.3",
-    "babel-preset-env": "^1.7.0",
-    "babel-preset-preact": "^1.1.0"
+    "@babel/core": "^7.1.2",
+    "@babel/preset-env": "^7.1.0",
+    "parcel-bundler": "^1.10.1"
   },
   "scripts": {
-    "start": "npm run copy && parcel watch --cache-dir='../dist/.cache' --out-dir='../dist/public' index.html",
-    "build": "npm run copy && parcel build --cache-dir='../dist/.cache' --out-dir='../dist/public' index.html",
-    "temp": "cp ./src/dashboard/index.html ../dist/public/dashboard.html && cp ./src/login/index.html ../dist/public/login.html"
+    "start": "parcel watch --cache-dir='../dist/.cache' --out-dir='../dist/public' src/dashboard.html",
+    "build": "parcel build --cache-dir='../dist/.cache' --out-dir='../dist/public' src/dashboard.html"
   }
 }
