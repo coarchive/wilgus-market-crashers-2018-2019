@@ -168,7 +168,6 @@ app.get('/api/buy/:ticker', (req, res) => {
         }
         stock.amount += amount;
         req.user.money -= price * amount;
-        console.log(stock);
         return users.put(req.user);
       }
       if (!req.user.stocks) req.user.stocks = [];
@@ -253,4 +252,4 @@ app.get('/logout', (req, res) => {
   res.redirect('/login.html');
 });
 
-app.listen(config.port, () => console.log('Ready!'));
+app.listen(config.port, () => console.log('Ready!')); // eslint-disable-line

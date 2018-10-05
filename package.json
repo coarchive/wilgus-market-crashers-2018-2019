@@ -23,5 +23,6 @@
     "push": "out --no-npm",
     "purge": "rm -rf dist/"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "private": true
 }
