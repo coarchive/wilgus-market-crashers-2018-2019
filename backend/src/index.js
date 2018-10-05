@@ -51,7 +51,11 @@ passport.use(new GoogleStrategy({
     auth: client
   });
   users.get(profile.id)
-    .then(user => cb(null, user))
+    .then(user => {
+      user.tokens.accessToken = accessToken;
+      user.tokens.refreshToken = refreshToken;
+      users.put(user).then(() => cb(null, user)).catch(cb);
+    })
     .catch(err => {
       if (err.status === 404) {
         const user = {
@@ -61,7 +65,8 @@ passport.use(new GoogleStrategy({
             accessToken, refreshToken
           },
           stocks: [],
-          money: 0
+          money: 0,
+          history: []
         };
         people.people.get({
           resourceName: 'people/me',
@@ -133,15 +138,118 @@ app.get('/api/stock/:ticker', (req, res) => {
 app.get('/api/buy/:ticker', (req, res) => {
   if (!req.user) {
     res.status(401).send('Unauthorized');
+    return;
   }
   const { ticker } = req.params;
+  const amount = req.query.amount == null ? 1 : +req.query.amount;
+  if (!Number.isInteger(amount)) {
+    res.status(400).send('Amount must be an integer');
+  }
+  const stocks = req.user.stocks.filter(stock => stock.ticker === ticker);
+  if (stocks.length > 1) {
+    throw new Error('ERROR: Database Corrupt');
+  }
+  let stock = stocks.length === 0 ? null : stocks[0];
+  iex.stockPrice(ticker)
+    .then(price => {
+      if (req.user.history == null) req.user.history = [];
+      const onMargin = req.user.money < price * amount;
+      req.user.history.push({
+        type: 'buy',
+        ticker,
+        amount,
+        price,
+        onMargin
+      });
+      if (stock) {
+        if (onMargin) {
+          res.status(400).send('Not enough money'); // TODO: Buy the same stock on and off margin
+          return false;
+        }
+        stock.amount += amount;
+        req.user.money -= price * amount;
+        return users.put(req.user);
+      }
+      if (!req.user.stocks) req.user.stocks = [];
+      stock = {
+        ticker,
+        price,
+        amount,
+        onMargin
+      };
+      req.user.stocks.push(stock);
+      return users.put(req.user);
+    })
+    .then(done => done && res.send(stock))
+    .catch(err => {
+      if (err.statusCode) {
+        return res.status(err.statusCode).send(err.statusText || 'External server error');
+      }
+      return res.status(500).send('Internal server error');
+    });
 });
 
-app.get('/', (req, res) => res.redirect('startpage.html'));
+app.get('/api/sell/:ticker', (req, res) => {
+  if (!req.user) {
+    res.status(401).send('Unauthorized');
+    return;
+  }
+  const { ticker } = req.params;
+  const amount = req.query.amount == null ? 1 : +req.query.amount;
+  if (!Number.isInteger(amount)) {
+    res.status(400).send('Amount must be an integer');
+  }
+  let idx;
+  const stocks = req.user.stocks.filter((stock, i) => {
+    if (stock.ticker === ticker) {
+      idx = i;
+      return true;
+    }
+    return false;
+  });
+  if (stocks.length === 0) {
+    req.status(400).send(`User doesn't have stock "${ticker}"`);
+  }
+  if (stocks.length !== 1) {
+    throw new Error('ERROR: Database Corrupt');
+  }
+  const stock = stocks[0];
+  if (stock.amount < amount) {
+    res.status(400).send('Cannot sell more than owned');
+  }
+  iex.stockPrice(ticker)
+    .then(price => {
+      req.user.history.push({
+        type: 'sell',
+        ticker,
+        amount,
+        price,
+        onMargin: stock.onMargin
+      });
+      stock.amount -= amount;
+      req.user.money += price * amount;
+      if (stock.onMargin) {
+        req.user.money -= stock.price * amount;
+      }
+      if (stock.amount === 0) {
+        req.user.stocks.splice(idx, 1);
+      }
+      return users.put(req.user);
+    })
+    .then(() => res.send('OK'))
+    .catch(err => {
+      if (err.statusCode) {
+        return res.status(err.statusCode).send(err.statusText || 'External server error');
+      }
+      return res.status(500).send('Internal server error');
+    });
+});
+
+app.get('/', (req, res) => res.redirect('/login.html'));
 
 app.get('/logout', (req, res) => {
   req.logout();
-  res.redirect('index.html');
+  res.redirect('/login.html');
 });
 
-app.listen(config.port, () => console.log('Ready!'));
+app.listen(config.port, () => console.log('Ready!')); // eslint-disable-line

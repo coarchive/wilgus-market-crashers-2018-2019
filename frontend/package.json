@@ -15,12 +15,12 @@
   },
   "homepage": "https://github.com/legodude17/frontend#readme",
   "devDependencies": {
-    "node-sass": "^4.9.3"
+    "@babel/core": "^7.1.2",
+    "@babel/preset-env": "^7.1.0",
+    "parcel-bundler": "^1.10.1"
   },
   "scripts": {
-    "start": "npm run copy && node-sass -w src/style.scss dest/style.css",
-    "build": "npm run copy && node-sass src/main.scss dest/main.css",
-    "copy": "cp src/dashboard.html ../dist/public/dashboad.html && cp src/login.html ../dist/public/login.html"
-  },
-  "dependencies": {}
+    "start": "parcel watch --cache-dir='../dist/.cache' --out-dir='../dist/public' src/dashboard.html",
+    "build": "parcel build --cache-dir='../dist/.cache' --out-dir='../dist/public' src/dashboard.html"
+  }
 }
