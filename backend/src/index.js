@@ -218,7 +218,7 @@ app.get('/api/sell/:ticker', (req, res) => {
     res.status(400).send('Cannot sell more than owned');
   }
   iex.stockPrice(ticker)
-    .then(price => {
+    .then((price) => {
       req.user.history.push({
         type: 'sell',
         ticker,
@@ -237,7 +237,7 @@ app.get('/api/sell/:ticker', (req, res) => {
       return users.put(req.user);
     })
     .then(() => res.send('OK'))
-    .catch(err => {
+    .catch((err) => {
       if (err.statusCode) {
         return res.status(err.statusCode).send(err.statusText || 'External server error');
       }
