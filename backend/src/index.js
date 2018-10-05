@@ -139,6 +139,7 @@ app.get('/api/buy/:ticker', (req, res) => {
   let stock;
   iex.stockPrice(ticker)
     .then(price => {
+      if (req.user.money == null) req.user.money = 0;
       const onMargin = req.user.money < price * amount;
       if (!req.user.stocks) req.user.stocks = [];
       stock = {
