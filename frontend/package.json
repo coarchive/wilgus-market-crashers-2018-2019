@@ -21,6 +21,7 @@
   },
   "scripts": {
     "start": "npm run copy && parcel watch --cache-dir='../dist/.cache' --out-dir='../dist/public' index.html",
-    "build": "npm run copy && parcel build --cache-dir='../dist/.cache' --out-dir='../dist/public' index.html"
+    "build": "npm run copy && parcel build --cache-dir='../dist/.cache' --out-dir='../dist/public' index.html",
+    "temp": "cp ./src/dashboard/index.html ../dist/public/dashboard.html && cp ./src/login/index.html ../dist/public/login.html"
   }
 }
