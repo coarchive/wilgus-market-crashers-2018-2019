@@ -36,11 +36,15 @@ function createHandler(res) {
   };
 }
 
+function error(str) {
+  return { error: str };
+}
+
 function ensureLogin(req, res, next) {
   if (req.user) {
     next();
   } else {
-    res.status(401).send('Unauthorized');
+    res.status(401).send(error('Unauthorized'));
   }
 }
 
@@ -137,7 +141,7 @@ app.get('/api/stock/:ticker', (req, res) => {
   const includeNews = req.query.news == null ? false : Boolean(req.query.news);
   const { ticker } = req.params;
   if (!ticker || ticker !== ticker.toString()) {
-    res.status(400).send('Invalid or missing ticker');
+    res.status(400).send(error('Invalid or missing ticker'));
     return;
   }
   const stock = {};
@@ -169,7 +173,7 @@ app.get('/api/buy/:ticker', ensureLogin, (req, res) => {
   const { ticker } = req.params;
   const amount = req.query.amount == null ? 1 : +req.query.amount;
   if (!Number.isInteger(amount)) {
-    res.status(400).send('Amount must be an integer');
+    res.status(400).send(error('Amount must be an integer'));
   }
   const stocks = req.user.stocks.filter(stock => stock.ticker === ticker);
   if (stocks.length > 1) {
@@ -178,7 +182,9 @@ app.get('/api/buy/:ticker', ensureLogin, (req, res) => {
   let stock = stocks.length === 0 ? null : stocks[0];
   iex.stockPrice(ticker)
     .then(price => {
-      if (req.user.history == null) req.user.history = [];
+      if (price === 'Unknown symbol') {
+        res.status(400).send(error(price));
+      }
       const onMargin = req.user.money < price * amount;
       req.user.history.push({
         type: 'buy',
@@ -189,7 +195,7 @@ app.get('/api/buy/:ticker', ensureLogin, (req, res) => {
       });
       if (stock) {
         if (onMargin) {
-          res.status(400).send('Not enough money'); // TODO: Buy the same stock on and off margin
+          res.status(400).send(error('Not enough money')); // TODO: Buy the same stock on and off margin
           return false;
         }
         stock.amount += amount;
@@ -214,7 +220,7 @@ app.get('/api/sell/:ticker', ensureLogin, (req, res) => {
   const { ticker } = req.params;
   const amount = req.query.amount == null ? 1 : +req.query.amount;
   if (!Number.isInteger(amount)) {
-    res.status(400).send('Amount must be an integer');
+    res.status(400).send(error('Amount must be an integer'));
   }
   let idx;
   const stocks = req.user.stocks.filter((stock, i) => {
@@ -225,14 +231,14 @@ app.get('/api/sell/:ticker', ensureLogin, (req, res) => {
     return false;
   });
   if (stocks.length === 0) {
-    req.status(400).send(`User doesn't have stock "${ticker}"`);
+    req.status(400).send(error(`User doesn't have stock "${ticker}"`));
   }
   if (stocks.length !== 1) {
     throw new Error('ERROR: Database Corrupt');
   }
   const stock = stocks[0];
   if (stock.amount < amount) {
-    res.status(400).send('Cannot sell more than owned');
+    res.status(400).send(error('Cannot sell more than owned'));
   }
   iex.stockPrice(ticker)
     .then(price => {
@@ -253,7 +259,7 @@ app.get('/api/sell/:ticker', ensureLogin, (req, res) => {
       }
       return users.put(req.user);
     })
-    .then(() => res.send('OK'))
+    .then(() => res.send({ ok: true }))
     .catch(createHandler(res));
 });
 
@@ -269,7 +275,7 @@ app.get('/api/user/:email', ensureLogin, (req, res) => {
     if (result.docs.length === 1) {
       res.send(scrubUser(result.docs[0]));
     } else if (result.docs.length === 0) {
-      res.status(404).send(`No user with email ${email}`);
+      res.status(404).send(error(`No user with email ${email}`));
     } else {
       throw new Error('ERROR: Database Corrupt');
     }
@@ -279,7 +285,7 @@ app.get('/api/user/:email', ensureLogin, (req, res) => {
 app.get('/api/users', ensureLogin, (req, res) => {
   const limit = req.query.limit == null ? 1 : +req.query.limit;
   if (!Number.isInteger(limit)) {
-    res.status(400).send('Amount must be an integer');
+    res.status(400).send(error('limit must be an integer'));
   }
   users.find({
     selector: {
