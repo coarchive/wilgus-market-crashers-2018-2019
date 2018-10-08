@@ -10,6 +10,7 @@ import { google } from 'googleapis';
 import fetch from 'node-fetch';
 import { IEXClient } from 'iex-api';
 import pfind from 'pouchdb-find';
+import morgan from 'morgan';
 
 PouchDB.plugin(pfind);
 
@@ -61,6 +62,7 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(morgan('tiny'));
 
 passport.serializeUser((user, done) => done(null, user._id));
 passport.deserializeUser((id, done) => users.get(id).then(user => done(null, user)).catch(done));

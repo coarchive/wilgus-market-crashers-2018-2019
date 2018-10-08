@@ -17,7 +17,6 @@
   "devDependencies": {
     "@babel/core": "^7.1.2",
     "@babel/preset-env": "^7.1.0",
-    "eslint-config-airbnb-base": "^13.1.0",
     "rollup": "^0.66.2",
     "rollup-plugin-babel": "^4.1.0-0",
     "rollup-plugin-commonjs": "^9.1.8",
@@ -35,6 +34,7 @@
     "express-session": "^1.15.6",
     "googleapis": "^34.0.0",
     "iex-api": "0.0.3",
+    "morgan": "^1.9.1",
     "node-fetch": "^2.2.0",
     "passport": "^0.4.0",
     "passport-google-oauth20": "^1.0.0",
