@@ -43,6 +43,14 @@ function ensureLogin(req, res, next) {
   }
 }
 
+function scrubUser(user) {
+  const userCopy = Object.assign({}, user);
+  delete userCopy.tokens;
+  delete userCopy._rev;
+  delete userCopy._id;
+  return userCopy;
+}
+
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 app.use(cookie());
 app.use(express.urlencoded({ extended: true }));
@@ -254,7 +262,7 @@ app.get('/api/user/:email', ensureLogin, (req, res) => {
       console.error(result.warning);
     }
     if (result.docs.length === 1) {
-      res.send(result.docs[0]);
+      res.send(scrubUser(result.docs[0]));
     } else if (result.docs.length === 0) {
       res.status(404).send(`No user with email ${email}`);
     } else {
@@ -275,7 +283,7 @@ app.get('/api/users', ensureLogin, (req, res) => {
         { type: 'teacher' }
       ]
     }
-  }).then(result => res.send(result.docs))
+  }).then(result => res.send(result.docs.map(scrubUser)))
     .catch(createHandler(res));
 });
 
