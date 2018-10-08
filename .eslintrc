@@ -4,7 +4,7 @@
     "no-multi-assign": "off",
     "no-shadow": "off",
     "no-return-assign": 1,
-    "arrow-parens": "off",
+    "arrow-parens": ["error", "as-needed"],
     "max-len": [
       "warn",
       {

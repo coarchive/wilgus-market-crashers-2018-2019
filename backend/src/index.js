@@ -72,12 +72,12 @@ passport.use(new GoogleStrategy({
     auth: client
   });
   users.get(profile.id)
-    .then((user) => {
+    .then(user => {
       user.tokens.accessToken = accessToken;
       user.tokens.refreshToken = refreshToken;
       users.put(user).then(() => cb(null, user)).catch(cb);
     })
-    .catch((err) => {
+    .catch(err => {
       if (err.status === 404) {
         const user = {
           _id: profile.id,
@@ -129,21 +129,21 @@ app.get('/api/stock/:ticker', (req, res) => {
   }
   const stock = {};
   iex.stockCompany(ticker)
-    .then((company) => {
+    .then(company => {
       stock.company = company;
       return iex.stockPrice(ticker);
     })
-    .then((price) => {
+    .then(price => {
       stock.price = price;
       return includeChart ? iex.stockChart(ticker, '1m') : false;
     })
-    .then((chart) => {
+    .then(chart => {
       if (chart) {
         stock.chart = chart;
       }
       return includeNews ? iex.stockNews(ticker, 2) : false;
     })
-    .then((news) => {
+    .then(news => {
       if (news) {
         stock.news = news;
       }
@@ -164,7 +164,7 @@ app.get('/api/buy/:ticker', ensureLogin, (req, res) => {
   }
   let stock = stocks.length === 0 ? null : stocks[0];
   iex.stockPrice(ticker)
-    .then((price) => {
+    .then(price => {
       if (req.user.history == null) req.user.history = [];
       const onMargin = req.user.money < price * amount;
       req.user.history.push({
@@ -222,7 +222,7 @@ app.get('/api/sell/:ticker', ensureLogin, (req, res) => {
     res.status(400).send('Cannot sell more than owned');
   }
   iex.stockPrice(ticker)
-    .then((price) => {
+    .then(price => {
       req.user.history.push({
         type: 'sell',
         ticker,
