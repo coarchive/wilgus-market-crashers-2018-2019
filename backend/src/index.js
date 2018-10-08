@@ -22,8 +22,26 @@ const publicURL = `${config.publicURL}:${config.port}`;
 const scope = [
   'profile',
   'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/userinfo.profile',
+  'https://www.googleapis.com/auth/userinfo.profile'
 ];
+
+function createHandler(res) {
+  return err => {
+    console.error(err);
+    if (err.statusCode) {
+      return res.status(err.statusCode).send(err.statusText || 'External server error');
+    }
+    return res.status(500).send(`Internal server error: ${JSON.stringify(err)}`);
+  };
+}
+
+function ensureLogin(req, res, next) {
+  if (req.user) {
+    next();
+  } else {
+    res.status(401).send('Unauthorized');
+  }
+}
 
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 app.use(cookie());
@@ -31,7 +49,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: config.secret,
   resave: true,
-  saveUninitialized: true,
+  saveUninitialized: true
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -42,16 +60,16 @@ passport.deserializeUser((id, done) => users.get(id).then(user => done(null, use
 passport.use(new GoogleStrategy({
   clientID: config.clientID,
   clientSecret: config.clientSecret,
-  callbackURL: `${publicURL}/auth/google/callback`,
+  callbackURL: `${publicURL}/auth/google/callback`
 }, (accessToken, refreshToken, profile, cb) => {
   const client = new google.auth.OAuth2();
   client.setCredentials({
     access_token: accessToken,
-    refresh_token: refreshToken,
+    refresh_token: refreshToken
   });
   const people = google.people({
     version: 'v1',
-    auth: client,
+    auth: client
   });
   users.get(profile.id)
     .then((user) => {
@@ -65,17 +83,22 @@ passport.use(new GoogleStrategy({
           _id: profile.id,
           name: profile.displayName,
           tokens: {
-            accessToken, refreshToken,
+            accessToken, refreshToken
           },
           stocks: [],
           money: 0,
-          history: [],
+          history: []
         };
         people.people.get({
           resourceName: 'people/me',
-          personFields: 'emailAddresses',
+          personFields: 'emailAddresses'
         }).then(({ data }) => {
-          user.email = data.emailAddresses[0].value;
+          const email = data.emailAddresses[0].value;
+          user.email = email;
+          if (email.slice(email.indexOf('@')) !== '@dtechhs.org') {
+            cb(new Error('You are not in the correct orginization'));
+          }
+          user.type = /\d/.test(email) ? 'student' : 'teacher';
           return users.put(user);
         }).then(() => cb(null, user)).catch(cb);
         return;
@@ -92,12 +115,8 @@ app.get('/auth/google/callback',
     res.redirect('/dashboard.html');
   });
 
-app.get('/api/user', (req, res) => {
-  if (req.user) {
-    res.send(req.user);
-  } else {
-    res.status(401).send('Unauthorized');
-  }
+app.get('/api/user', ensureLogin, (req, res) => {
+  res.send(req.user);
 });
 
 app.get('/api/stock/:ticker', (req, res) => {
@@ -130,19 +149,10 @@ app.get('/api/stock/:ticker', (req, res) => {
       }
       res.send(stock);
     })
-    .catch((err) => {
-      if (err.statusCode) {
-        return res.status(err.statusCode).send(err.statusText || 'External server error');
-      }
-      return res.status(500).send('Internal server error');
-    });
+    .catch(createHandler(res));
 });
 
-app.get('/api/buy/:ticker', (req, res) => {
-  if (!req.user) {
-    res.status(401).send('Unauthorized');
-    return;
-  }
+app.get('/api/buy/:ticker', ensureLogin, (req, res) => {
   const { ticker } = req.params;
   const amount = req.query.amount == null ? 1 : +req.query.amount;
   if (!Number.isInteger(amount)) {
@@ -162,7 +172,7 @@ app.get('/api/buy/:ticker', (req, res) => {
         ticker,
         amount,
         price,
-        onMargin,
+        onMargin
       });
       if (stock) {
         if (onMargin) {
@@ -178,25 +188,16 @@ app.get('/api/buy/:ticker', (req, res) => {
         ticker,
         price,
         amount,
-        onMargin,
+        onMargin
       };
       req.user.stocks.push(stock);
       return users.put(req.user);
     })
     .then(done => done && res.send(stock))
-    .catch((err) => {
-      if (err.statusCode) {
-        return res.status(err.statusCode).send(err.statusText || 'External server error');
-      }
-      return res.status(500).send('Internal server error');
-    });
+    .catch(createHandler(res));
 });
 
-app.get('/api/sell/:ticker', (req, res) => {
-  if (!req.user) {
-    res.status(401).send('Unauthorized');
-    return;
-  }
+app.get('/api/sell/:ticker', ensureLogin, (req, res) => {
   const { ticker } = req.params;
   const amount = req.query.amount == null ? 1 : +req.query.amount;
   if (!Number.isInteger(amount)) {
@@ -227,7 +228,7 @@ app.get('/api/sell/:ticker', (req, res) => {
         ticker,
         amount,
         price,
-        onMargin: stock.onMargin,
+        onMargin: stock.onMargin
       });
       stock.amount -= amount;
       req.user.money += price * amount;
@@ -240,23 +241,42 @@ app.get('/api/sell/:ticker', (req, res) => {
       return users.put(req.user);
     })
     .then(() => res.send('OK'))
-    .catch((err) => {
-      if (err.statusCode) {
-        return res.status(err.statusCode).send(err.statusText || 'External server error');
-      }
-      return res.status(500).send('Internal server error');
-    });
+    .catch(createHandler(res));
 });
 
-app.get('/api/user/:email', (req, res) => {
+app.get('/api/user/:email', ensureLogin, (req, res) => {
   const { email } = req.params;
+  users.find({
+    selector: { email },
+    sort: ['_id']
+  }).then(result => {
+    if (result.warning) {
+      console.error(result.warning);
+    }
+    if (result.docs.length === 1) {
+      res.send(result.docs[0]);
+    } else if (result.docs.length === 0) {
+      res.status(404).send(`No user with email ${email}`);
+    } else {
+      res.status(500).send('Data corrupt!');
+    }
+  }).catch(createHandler(res));
 });
 
-app.get('/api/users', (req, res) => {
+app.get('/api/users', ensureLogin, (req, res) => {
   const limit = req.query.limit == null ? 1 : +req.query.limit;
   if (!Number.isInteger(limit)) {
     res.status(400).send('Amount must be an integer');
   }
+  users.find({
+    selector: {
+      $or: [
+        { type: 'student' },
+        { type: 'teacher' }
+      ]
+    }
+  }).then(result => res.send(result.docs))
+    .catch(createHandler(res));
 });
 
 app.get('/', (req, res) => res.redirect('/login.html'));
