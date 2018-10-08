@@ -20,11 +20,15 @@ fetch('/api/user').then(res => res.json()).then(user => {
     user.stocks,
     stock => `${stock.amount} shares in ${stock.ticker} ${stock.onMargin
       ? 'on margin'
-      : 'with cash'} at $${stock.price} each.`
+      : 'with cash'} at $${stock.price} each. Worth $${stock.amount * stock.price}.` // TODO: get current price
   );
   list('history',
     user.history,
-    entry => `${entry.type === 'buy' ? 'Bought' : 'Sold'} ${entry.amount} shares in ${entry.ticker} ${entry.onMargin
+    entry => `${entry.type === 'buy'
+      ? 'Bought'
+      : 'Sold'} ${entry.amount} shares in ${entry.ticker} ${entry.onMargin
       ? 'on margin'
-      : 'with cash'} at $${entry.price} each. `);
+      : 'with cash'} at $${entry.price} each. ${entry.type === 'buy'
+      ? 'Spent'
+      : 'Earned'} $${entry.amount * entry.price}`);
 });
