@@ -266,7 +266,7 @@ app.get('/api/user/:email', ensureLogin, (req, res) => {
     } else if (result.docs.length === 0) {
       res.status(404).send(`No user with email ${email}`);
     } else {
-      res.status(500).send('Data corrupt!');
+      throw new Error('ERROR: Database Corrupt');
     }
   }).catch(createHandler(res));
 });
