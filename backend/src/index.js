@@ -184,6 +184,7 @@ app.get('/api/buy/:ticker', ensureLogin, (req, res) => {
     .then(price => {
       if (price === 'Unknown symbol') {
         res.status(400).send(error(price));
+        return false;
       }
       const onMargin = req.user.money < price * amount;
       req.user.history.push({
