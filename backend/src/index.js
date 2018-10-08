@@ -104,11 +104,14 @@ passport.use(new GoogleStrategy({
           const email = data.emailAddresses[0].value;
           user.email = email;
           if (email.slice(email.indexOf('@')) !== '@dtechhs.org') {
-            cb(new Error('You are not in the correct orginization'));
+            return Promise.reject(new Error('You are not in the correct orginization'));
           }
           user.type = /\d/.test(email) ? 'student' : 'teacher';
           return users.put(user);
-        }).then(() => cb(null, user)).catch(cb);
+        }).then(() => cb(null, user)).catch(err => {
+          console.error(err); // eslint-disable-line no-console
+          cb(err);
+        });
         return;
       }
       cb(err);
@@ -120,7 +123,7 @@ app.get('/auth/google', passport.authenticate('google', { scope }));
 app.get('/auth/google/callback',
   passport.authenticate('google', { scopes: ['profile'], failureRedirect: '/login' }),
   (req, res) => {
-    res.redirect('/dashboard.html');
+    res.redirect('/dashboard');
   });
 
 app.get('/api/user', ensureLogin, (req, res) => {
@@ -287,11 +290,27 @@ app.get('/api/users', ensureLogin, (req, res) => {
     .catch(createHandler(res));
 });
 
-app.get('/', (req, res) => res.redirect('/login.html'));
+app.get('/', (req, res) => res.redirect('/login'));
+
+app.get('/login', (req, res) => {
+  if (req.user) {
+    res.redirect('/dashboard.html');
+  } else {
+    res.redirect('/login.html');
+  }
+});
+
+app.get('/dashboard', (req, res) => {
+  if (req.user) {
+    res.redirect('/dashboard.html');
+  } else {
+    res.redirect('/login.html');
+  }
+});
 
 app.get('/logout', (req, res) => {
   req.logout();
-  res.redirect('/login.html');
+  res.redirect('/login');
 });
 
 app.listen(config.port, () => console.log('Ready!')); // eslint-disable-line no-console
