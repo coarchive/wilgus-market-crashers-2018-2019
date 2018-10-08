@@ -27,7 +27,7 @@ const scope = [
 
 function createHandler(res) {
   return err => {
-    console.error(err);
+    console.error(err); // eslint-disable-line no-console
     if (err.statusCode) {
       return res.status(err.statusCode).send(err.statusText || 'External server error');
     }
@@ -259,7 +259,7 @@ app.get('/api/user/:email', ensureLogin, (req, res) => {
     sort: ['_id']
   }).then(result => {
     if (result.warning) {
-      console.error(result.warning);
+      console.error(result.warning); // eslint-disable-line no-console
     }
     if (result.docs.length === 1) {
       res.send(scrubUser(result.docs[0]));
@@ -294,4 +294,4 @@ app.get('/logout', (req, res) => {
   res.redirect('/login.html');
 });
 
-app.listen(config.port, () => console.log('Ready!')); // eslint-disable-line
+app.listen(config.port, () => console.log('Ready!')); // eslint-disable-line no-console
