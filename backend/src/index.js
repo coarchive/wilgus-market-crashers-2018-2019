@@ -306,29 +306,23 @@ app.get('/api/stocks/search/:query', (req, res) => {
   if (!query) {
     res.status(400).send(error('Must provide a query'));
   }
-  console.log(query);
-  fetch('https://api.iextrading.com/1.0/ref-data/symbols').then(res => {
-    console.log('Fetch done!');
-    const stream = res.body.pipe(jsonParse('*'));
+  fetch('https://api.iextrading.com/1.0/ref-data/symbols').then(result => {
+    const stream = result.body.pipe(jsonParse('*'));
     const stocks = [];
     let success = true;
     stream.on('data', data => {
-      console.log('got', data.name);
       if (
         data.symbol.toLowerCase().includes(query.toLowerCase())
         || data.name.toLowerCase().includes(query.toLowerCase())
       ) {
-        console.log('Matches!');
         stocks.push(data);
       }
     });
-    stream.on('error', err => {
-      console.error(err);
+    result.body.on('error', err => {
       res.status(500).send(error(`Internal server error: ${err}`));
       success = false;
     });
-    stream.on('finish', () => {
-      console.log(success, stocks);
+    result.body.on('finish', () => {
       if (success) {
         res.send({ stocks, query });
       }
