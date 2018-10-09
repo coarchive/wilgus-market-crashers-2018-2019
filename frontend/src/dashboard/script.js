@@ -48,8 +48,8 @@ fetch('/api/user').then(res => res.json()).then(user => {
       ? 'on margin'
       : 'with cash'} at $${entry.price} each. ${entry.type === 'buy'
       ? 'Spent'
-      : 'Earned'} $${formatMoney(entry.amount * entry.price)} ${entry.onMargin && entry.type === 'sell'
-      ? `Paid off the loan with $${formatMoney(entry.loan)}`
-      : ''}`);
+      : 'Earned'} $${formatMoney(entry.amount * entry.price)}${entry.onMargin && entry.type === 'sell'
+      ? `, paid off the loan with $${formatMoney(entry.loan)}.`
+      : '.'}`);
   return handleStocks(user.stocks);
 }).then(() => console.log('DONE!'));
