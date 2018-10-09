@@ -248,7 +248,8 @@ app.get('/api/sell/:ticker', ensureLogin, (req, res) => {
         ticker,
         amount,
         price,
-        onMargin: stock.onMargin
+        onMargin: stock.onMargin,
+        loan: stock.onMargin ? stock.price * amount : undefined
       });
       stock.amount -= amount;
       req.user.money += price * amount;

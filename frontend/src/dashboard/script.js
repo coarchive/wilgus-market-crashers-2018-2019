@@ -12,6 +12,10 @@ function list(id, arr, map) {
   }).forEach(elm => ul.appendChild(elm));
 }
 
+function formatMoney(money) {
+  return Math.round(money * 100) / 100;
+}
+
 function handleStocks(stocks) {
   const stockInfos = {};
   const proms = [];
@@ -27,13 +31,15 @@ function handleStocks(stocks) {
       .company
       .companyName} (${stock.ticker}) ${stock.onMargin
       ? 'on margin'
-      : 'with cash'} at $${stock.price} each. Worth $${stock.amount * stockInfos[stock.ticker].price}`
+      : 'with cash'} at $${stock.price} each. Currently worth $${formatMoney(
+      stock.amount * stockInfos[stock.ticker].price
+    )}`
   ));
 }
 
 fetch('/api/user').then(res => res.json()).then(user => {
   write('welcome', `Welcome to the market, ${user.name}!`);
-  write('money', `You have $${user.money}.`);
+  write('money', `You have $${formatMoney(user.money)}.`);
   list('history',
     user.history,
     entry => `${entry.type === 'buy'
@@ -42,6 +48,8 @@ fetch('/api/user').then(res => res.json()).then(user => {
       ? 'on margin'
       : 'with cash'} at $${entry.price} each. ${entry.type === 'buy'
       ? 'Spent'
-      : 'Earned'} $${entry.amount * entry.price}`);
+      : 'Earned'} $${formatMoney(entry.amount * entry.price)} ${entry.onMargin && entry.type === 'sell'
+      ? `Paid off the loan with $${formatMoney(entry.loan)}`
+      : ''}`);
   return handleStocks(user.stocks);
 }).then(() => console.log('DONE!'));
