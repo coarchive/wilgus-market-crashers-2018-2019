@@ -11,6 +11,7 @@ import fetch from 'node-fetch';
 import { IEXClient } from 'iex-api';
 import pfind from 'pouchdb-find';
 import morgan from 'morgan';
+import { parse as jsonParse } from 'JSONStream';
 
 PouchDB.plugin(pfind);
 
@@ -298,6 +299,41 @@ app.get('/api/users', ensureLogin, (req, res) => {
     }
   }).then(result => res.send(result.docs.map(scrubUser)))
     .catch(createHandler(res));
+});
+
+app.get('/api/stocks/search/:query', (req, res) => {
+  const { query } = req.params;
+  if (!query) {
+    res.status(400).send(error('Must provide a query'));
+  }
+  console.log(query);
+  fetch('https://api.iextrading.com/1.0/ref-data/symbols').then(res => {
+    console.log('Fetch done!');
+    const stream = res.body.pipe(jsonParse('*'));
+    const stocks = [];
+    let success = true;
+    stream.on('data', data => {
+      console.log('got', data.name);
+      if (
+        data.symbol.toLowerCase().includes(query.toLowerCase())
+        || data.name.toLowerCase().includes(query.toLowerCase())
+      ) {
+        console.log('Matches!');
+        stocks.push(data);
+      }
+    });
+    stream.on('error', err => {
+      console.error(err);
+      res.status(500).send(error(`Internal server error: ${err}`));
+      success = false;
+    });
+    stream.on('finish', () => {
+      console.log(success, stocks);
+      if (success) {
+        res.send({ stocks, query });
+      }
+    });
+  }).catch(createHandler());
 });
 
 app.get('/', (req, res) => res.redirect('/login'));
