@@ -18,12 +18,12 @@ window.onload = () => {
     fetch(`/api/stocks/search/${search.value}`)
       .then(res => res.json())
       .then(res => {
-        const proms = res.stocks.map(stock => fetch(`/api/stock/${stock}`).then(res => res.json()));
+        const proms = res.stocks.map(stock => fetch(`/api/stock/${stock.symbol}`).then(res => res.json()));
         Promise.all(proms).then(reses => {
           list(
             'stocks',
             res.stocks,
-            (stock, i, _, stockData = reses[i]) => `${stockData.company.companyName} (${stock}) - $${stockData.price}`
+            (stock, i, _, stockData = reses[i]) => `${stock.name} (${stock.symbol}) - $${stockData.price}`
           );
         });
       })
