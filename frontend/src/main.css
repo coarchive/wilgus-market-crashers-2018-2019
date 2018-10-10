@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css?family=Krub|Open+Sans:400,800');
+html, body {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  --d-pc: #303F9F;
+  --l-pc: #C5CAE9;
+  --pc: #3F51B5;
+  --ac: #7C4DFF;
+  --pt: #212121;
+  --st: #757575;
+  --dc: #BDBDBD;
+}
+* {
+  user-select: none;
+}
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
