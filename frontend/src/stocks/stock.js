@@ -82,6 +82,7 @@ Promise.all([fetch(`/api/stock/${stock}?chart=true`), fetch('/api/user')])
     const howMuch = document.getElementById('much');
     const go = document.getElementById('go');
     const ticker = stock.company.symbol;
+    const ownedP = document.getElementById('owned');
     function recalcFeedback() {
       if (type.value === 'buy') {
         const cost = howMuch.value * stock.price;
@@ -106,8 +107,15 @@ Promise.all([fetch(`/api/stock/${stock}?chart=true`), fetch('/api/user')])
     }
     if (user.error === 'Unauthorized') {
       document.getElementById('transact').style.display = 'none';
+      ownedP.innerText = '';
     } else {
+      const owned = user.stocks.filter(s => s.ticker === ticker)[0];
       type.onchange = howMuch.onchange = recalcFeedback;
+      if (owned == null) {
+        ownedP.innerText = '';
+      } else {
+        ownedP.innerText = `You own ${owned.amount} shares in ${ticker}.`;
+      }
       go.onclick = () => {
         fetch(`/api/${type.value}/${ticker}?amount=${howMuch.value}`)
           .then(res => res.json())
