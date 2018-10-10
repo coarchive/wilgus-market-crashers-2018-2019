@@ -1,14 +1,5 @@
 /* eslint-env browser */
 
-function list(id, arr, map) {
-  const ul = document.getElementById(id);
-  arr.map(map).map(t => {
-    const p = document.createElement('p');
-    p.innerText = t;
-    return p;
-  }).forEach(elm => ul.appendChild(elm));
-}
-
 window.onload = () => {
   const search = document.getElementById('search');
   const button = document.getElementById('doSearch');
@@ -20,11 +11,15 @@ window.onload = () => {
       .then(res => {
         const proms = res.stocks.map(stock => fetch(`/api/stock/${stock.symbol}`).then(res => res.json()));
         Promise.all(proms).then(reses => {
-          list(
-            'stocks',
-            res.stocks,
-            (stock, i, _, stockData = reses[i]) => `${stock.name} (${stock.symbol}) - $${stockData.price}`
-          );
+          const ul = document.getElementById('stocks');
+          res.stocks.forEach((stock, i) => {
+            const a = document.createElement('a');
+            a.href = `/stock.html?stock=${stock.symbol}`;
+            a.innerText = `${stock.name} (${stock.symbol}) - $${reses[i].price}`;
+            ul.appendChild(a);
+            ul.appendChild(document.createElement('br'));
+            ul.appendChild(document.createElement('br'));
+          });
         });
       })
       .then(() => console.log('DONE!'));
