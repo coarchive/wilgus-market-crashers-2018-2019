@@ -22,5 +22,8 @@
   "scripts": {
     "start": "parcel watch --cache-dir='../dist/.cache' --out-dir='../dist/public' src/dashboard.html",
     "build": "parcel build --cache-dir='../dist/.cache' --out-dir='../dist/public' src/dashboard.html"
+  },
+  "dependencies": {
+    "chart.js": "^2.7.2"
   }
 }
