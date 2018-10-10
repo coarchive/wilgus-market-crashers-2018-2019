@@ -3,6 +3,7 @@ html, body {
   margin: 0;
   height: 100%;
   width: 100%;
+  overflow-x: hidden;
   --d-pc: #303F9F;
   --l-pc: #C5CAE9;
   --pc: #3F51B5;
@@ -10,6 +11,7 @@ html, body {
   --pt: #212121;
   --st: #757575;
   --dc: #BDBDBD;
+  --box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.16);
 }
 * {
   user-select: none;
