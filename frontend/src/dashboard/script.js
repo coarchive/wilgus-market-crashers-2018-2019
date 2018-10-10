@@ -62,4 +62,4 @@ fetch('/api/user').then(res => res.json()).then(user => {
       ? `, paid off the loan with $${formatMoney(entry.loan)}.`
       : '.'}`);
   return handleStocks(user.stocks);
-}).then(() => console.log('DONE!'));
+}).then(() => console.log('DONE!')); // eslint-disable-line no-console

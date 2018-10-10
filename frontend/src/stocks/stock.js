@@ -12,7 +12,6 @@ const stock = s.slice(s.indexOf('stock=') + 6, s.includes('&') ? s.indexOf('&', 
 Promise.all([fetch(`/api/stock/${stock}?chart=true`), fetch('/api/user')])
   .then(([res1, res2]) => Promise.all([res1.json(), res2.json()]))
   .then(([stock, user]) => {
-    console.log(stock, user);
     document.title = `${stock.company.companyName} (${stock.company.symbol})`;
     write('stock', `${document.title} - $${stock.price}`);
     const ctx = document.getElementById('chart').getContext('2d');
@@ -121,11 +120,11 @@ Promise.all([fetch(`/api/stock/${stock}?chart=true`), fetch('/api/user')])
           .then(res => res.json())
           .then(resp => {
             if (resp.error) {
-              alert(`ERROR: ${resp.error}`);
+              alert(`ERROR: ${resp.error}`); // TODO: something better
             } else {
-              alert('Done!');
+              window.location.reload();
             }
-          }).catch(err => alert(`ERROR: ${err.toString()}`));
+          }).catch(err => alert(`ERROR: ${err.toString()}`)); // TODO: something better
       };
     }
   });
