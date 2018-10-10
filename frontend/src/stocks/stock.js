@@ -9,12 +9,12 @@ const s = window.location.search;
 
 const stock = s.slice(s.indexOf('stock=') + 6, s.includes('&') ? s.indexOf('&', s.indexOf('stock=')) : undefined);
 
-fetch(`/api/stock/${stock}?chart=true`)
-  .then(res => res.json())
-  .then(stock => {
+Promise.all([fetch(`/api/stock/${stock}?chart=true`), fetch('/api/user')])
+  .then(([res1, res2]) => Promise.all([res1.json(), res2.json()]))
+  .then(([stock, user]) => {
+    console.log(stock, user);
     document.title = `${stock.company.companyName} (${stock.company.symbol})`;
-    write('stock', document.title);
-    write('price', `$${stock.price}`);
+    write('stock', `${document.title} - $${stock.price}`);
     const ctx = document.getElementById('chart').getContext('2d');
     const chart = new Chart(ctx, {
       type: 'line',
@@ -77,4 +77,47 @@ fetch(`/api/stock/${stock}?chart=true`)
           chart.update();
         });
     };
+    const feedback = document.getElementById('feedback');
+    const type = document.getElementById('type');
+    const howMuch = document.getElementById('much');
+    const go = document.getElementById('go');
+    const ticker = stock.company.symbol;
+    function recalcFeedback() {
+      if (type.value === 'buy') {
+        const cost = howMuch.value * stock.price;
+        feedback.innerText = `This will cost you $${cost}. You will ${cost < user.money ? 'not ' : ''}need a loan.`;
+        go.disabled = false;
+      } else {
+        const owned = user.stocks.filter(s => s.ticker === ticker)[0];
+        if (owned == null) {
+          feedback.innerText = 'Can\'t sell something you don\'t own!';
+          go.disabled = true;
+        } else if (howMuch.value > owned.amount) {
+          feedback.innerText = 'Can\'t sell more than owned.';
+          go.disabled = true;
+        } else {
+          const earned = howMuch.value * stock.price;
+          feedback.innerTest = `This will give you $${earned}.${owned.onMargin
+            ? ` You will need to pay off the loan with $${howMuch.value * owned.price}.`
+            : ''}`;
+          go.disabled = true;
+        }
+      }
+    }
+    if (user.error === 'Unauthorized') {
+      document.getElementById('transact').style.display = 'none';
+    } else {
+      type.onchange = howMuch.onchange = recalcFeedback;
+      go.onclick = () => {
+        fetch(`/api/${type.value}/${ticker}?amount=${howMuch.value}`)
+          .then(res => res.json())
+          .then(resp => {
+            if (resp.error) {
+              alert(`ERROR: ${resp.error}`);
+            } else {
+              alert('Done!');
+            }
+          }).catch(err => alert(`ERROR: ${err.toString()}`));
+      };
+    }
   });

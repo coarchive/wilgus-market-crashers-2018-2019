@@ -6,9 +6,20 @@
   </head>
   <body>
     <p id="stock"></p>
-    <p id="price"></p>
-    <canvas id="chart" width="1000" height="500"></canvas>
+    <canvas id="chart" width="1000" height="300"></canvas>
     <button id="add">Compare Stock</button>
+    <br>
+    <br>
+    <div id="transact">
+      <select id="type">
+        <option value="sell">Sell</option>
+        <option value="buy">Buy</option>
+      </select>
+      <br>
+      Amount: <input type="number" id="much"></input>
+      <p id="feedback"></p>
+      <button id="go">GO!</button>
+    </div>
     <script src="stocks/stock.js"></script>
   </body>
 </html>
