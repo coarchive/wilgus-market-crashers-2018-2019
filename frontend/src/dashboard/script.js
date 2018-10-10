@@ -41,7 +41,7 @@ fetch('/api/user').then(res => res.json()).then(user => {
   write('welcome', `Welcome to the market, ${user.name}!`);
   write('money', `You have $${formatMoney(user.money)}.`);
   list('history',
-    user.history,
+    user.history.reverse(),
     entry => `${entry.type === 'buy'
       ? 'Bought'
       : 'Sold'} ${entry.amount} shares in ${entry.ticker} ${entry.onMargin
