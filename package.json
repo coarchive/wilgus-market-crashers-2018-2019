@@ -24,7 +24,8 @@
     "start": "mkdir -p dist/public && (cd frontend && npm start) & (cd backend && npm start)",
     "build": "mkdir -p dist/public && (cd frontend && npm run build) & (cd backend && npm run build)",
     "push": "out --no-npm",
-    "purge": "rm -rf dist/"
+    "purge": "rm -rf dist/",
+    "postinstall": "(cd frontend && npm i) & (cd backend && npm i)"
   },
   "dependencies": {},
   "private": true
