@@ -1,12 +1,15 @@
 /* eslint-env browser */
 import Chart from 'chart.js';
 
+// const write = (id) => {
+//   const e = document.getElementById(id);
+//   return text => e.innerText = text;
+// }
 function write(id, text) {
   document.getElementById(id).innerText = text;
 }
 
 const s = window.location.search;
-
 const stock = s.slice(s.indexOf('stock=') + 6, s.includes('&') ? s.indexOf('&', s.indexOf('stock=')) : undefined);
 
 Promise.all([fetch(`/api/stock/${stock}?chart=true`), fetch('/api/user')])
