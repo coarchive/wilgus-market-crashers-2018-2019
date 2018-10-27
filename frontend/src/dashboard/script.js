@@ -1,7 +1,5 @@
 /* eslint-env browser */
-function write(id, text) {
-  document.getElementById(id).innerHTML = text;
-}
+import write from '../write';
 
 function link(href, text) {
   return `<a href=${href}>${text}</a>`;
@@ -16,9 +14,7 @@ function list(id, arr, map) {
   }).forEach(elm => ul.appendChild(elm));
 }
 
-function formatMoney(money) {
-  return Math.round(money * 100) / 100;
-}
+const formatMoney = m => Math.round(m * 100) / 100;
 
 function handleStocks(stocks) {
   const stockInfos = {};
