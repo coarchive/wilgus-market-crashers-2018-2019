@@ -2,14 +2,12 @@
   "extends": "airbnb-base",
   "rules": {
     "arrow-parens": ["error", "as-needed"],
-    "comma-dangle": ["error", "never"],
     "indent": ["error", 2],
     "max-len": ["warn", { "code": 120 }],
     "no-multi-assign": "off",
     "no-param-reassign": "off",
     "no-plusplus": "off",
     "no-return-assign": 1,
-    "no-shadow": "off",
     "no-underscore-dangle": "off",
     "camelcase": "off"
   },

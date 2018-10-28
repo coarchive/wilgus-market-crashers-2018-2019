@@ -1,26 +1,35 @@
-/* eslint-env browser */
+import {
+  clear, crel, crdf, geti, link,
+} from '../dom';
 
-const search = document.getElementById('search');
-const button = document.getElementById('doSearch');
-button.onclick = () => {
-  const stocks = document.getElementById('stocks');
-  [...stocks.children].forEach(child => stocks.removeChild(child));
-  fetch(`/api/stocks/search/${search.value}`)
+const button_e = geti('doSearch');
+const search_e = geti('search');
+const stocks_e = geti('stocks');
+
+button_e.onclick = () => {
+  clear(stocks_e);
+  fetch(`/api/stocks/search/${search_e.value}`)
     .then(res => res.json())
-    .then(res => {
-      const proms = res.stocks.map(stock => fetch(`/api/stock/${stock.symbol}`).then(res => res.json()));
-      Promise.all(proms).then(reses => {
-        const ul = document.getElementById('stocks');
-        res.stocks.forEach((stock, i) => {
-          const a = document.createElement('a');
-          a.href = `/stock.html?stock=${stock.symbol}`;
-          a.innerText = `${stock.name} (${stock.symbol}) - $${reses[i].price}`;
-          ul.appendChild(a);
-          ul.appendChild(document.createElement('br'));
-          ul.appendChild(document.createElement('br'));
-        });
+    .then(searchRes => {
+      console.log(searchRes);
+      searchRes.stocks.forEach(stock => {
+        console.log(stock);
+        const { symbol } = stock;
+        fetch(`/api/stock/${stock.symbol}`)
+          .then(res => res.json())
+          .then(stockData => {
+            console.log(stockData);
+            const { companyName } = stockData.company;
+            const fragment = crdf();
+            const a = crel('a');
+            a.href = `/stock.html?stock=${symbol}`;
+            a.innerText = `${companyName} (${symbol})`;
+            fragment.appendChild(a);
+            fragment.appendChild(crel('br'));
+            fragment.appendChild(crel('br'));
+            stocks_e.appendChild(fragment);
+          });
       });
     })
     .then(() => console.log('DONE!'));
 };
-// TODO: Add enter key functionality

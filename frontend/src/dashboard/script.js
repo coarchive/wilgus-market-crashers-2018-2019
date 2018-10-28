@@ -1,6 +1,5 @@
-/* eslint-env browser */
 import {
-  crel, crdf, geti, link
+  clear, crel, crdf, geti, link,
 } from '../dom';
 
 const linkStock = ticker => link(`/stock.html?stock=${ticker}`, ticker);
@@ -17,12 +16,11 @@ fetch('/api/user')
     // Display some basic info
     welcome_e.innerText = `Welcome to the market, ${user.name}!`;
     money_e.innerText = `You have $${formatMoney(user.money)}.`;
-    history_e.innerHTML = '';
+    clear(history_e);
     const historyFragment = crdf();
-    console.log(user);
     user.history.reverse().forEach(entry => {
       const {
-        amount, loan, onMargin, price, ticker, type
+        amount, loan, onMargin, price, ticker, type,
       } = entry;
       const pastParticiples = type === 'buy' ? ppBuy : ppSell;
       const stock = linkStock(ticker);
@@ -42,7 +40,7 @@ fetch('/api/user')
     });
     history_e.appendChild(historyFragment);
 
-    stocks_e.innerHTML = '';
+    clear(stocks_e);
     const stocksFragment = crdf();
     const proms = user.stocks.map(stock => {
       const { ticker } = stock;
@@ -50,7 +48,6 @@ fetch('/api/user')
         .then(res => res.json())
         .then(stobj => {
           const { amount, price } = stock;
-          console.log(stobj);
           const { companyName } = stobj.company;
           const link = linkStock(ticker);
           const li = crel('li');

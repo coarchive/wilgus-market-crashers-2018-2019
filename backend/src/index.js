@@ -24,7 +24,8 @@ const publicURL = `${config.publicURL}:${config.port}`;
 const scope = [
   'profile',
   'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/userinfo.profile'
+  'https://www.googleapis.com/auth/userinfo.profile',
+  'https://www.googleapis.com/auth/userinfo.profile',
 ];
 
 function createHandler(res) {
@@ -63,7 +64,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: config.secret,
   resave: true,
-  saveUninitialized: true
+  saveUninitialized: true,
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -75,16 +76,16 @@ passport.deserializeUser((id, done) => users.get(id).then(user => done(null, use
 passport.use(new GoogleStrategy({
   clientID: config.clientID,
   clientSecret: config.clientSecret,
-  callbackURL: `${publicURL}/auth/google/callback`
+  callbackURL: `${publicURL}/auth/google/callback`,
 }, (accessToken, refreshToken, profile, cb) => {
   const client = new google.auth.OAuth2();
   client.setCredentials({
     access_token: accessToken,
-    refresh_token: refreshToken
+    refresh_token: refreshToken,
   });
   const people = google.people({
     version: 'v1',
-    auth: client
+    auth: client,
   });
   users.get(profile.id)
     .then(user => {
@@ -98,25 +99,27 @@ passport.use(new GoogleStrategy({
           _id: profile.id,
           name: profile.displayName,
           tokens: {
-            accessToken, refreshToken
+            accessToken, refreshToken,
           },
           stocks: [],
           money: 0,
-          history: []
+          history: [],
         };
         people.people.get({
           resourceName: 'people/me',
-          personFields: 'emailAddresses'
+          personFields: 'emailAddresses',
         }).then(({ data }) => {
           const email = data.emailAddresses[0].value;
           user.email = email;
           if (email.slice(email.indexOf('@')) !== '@dtechhs.org') {
-            return Promise.reject(new Error('You are not in the correct orginization'));
+            const e = Error('You have to login with an @dtechhs.org email.');
+            e.name = 'ArtificialRestriction';
+            return Promise.reject(e);
           }
           user.type = /\d/.test(email) ? 'student' : 'teacher';
           return users.put(user);
         }).then(() => cb(null, user)).catch(err => {
-          console.error(err); // eslint-disable-line no-console
+          console.error(err);
           cb(err);
         });
         return;
@@ -193,7 +196,7 @@ app.get('/api/buy/:ticker', ensureLogin, (req, res) => {
         ticker,
         amount,
         price,
-        onMargin
+        onMargin,
       });
       if (stock) {
         if (onMargin) {
@@ -209,7 +212,7 @@ app.get('/api/buy/:ticker', ensureLogin, (req, res) => {
         ticker,
         price,
         amount,
-        onMargin
+        onMargin,
       };
       req.user.stocks.push(stock);
       return users.put(req.user);
@@ -250,7 +253,7 @@ app.get('/api/sell/:ticker', ensureLogin, (req, res) => {
         amount,
         price,
         onMargin: stock.onMargin,
-        loan: stock.onMargin ? stock.price * amount : undefined
+        loan: stock.onMargin ? stock.price * amount : undefined,
       });
       stock.amount -= amount;
       req.user.money += price * amount;
@@ -270,7 +273,7 @@ app.get('/api/user/:email', ensureLogin, (req, res) => {
   const { email } = req.params;
   users.find({
     selector: { email },
-    sort: ['_id']
+    sort: ['_id'],
   }).then(result => {
     if (result.warning) {
       console.error(result.warning); // eslint-disable-line no-console
@@ -294,9 +297,9 @@ app.get('/api/users', ensureLogin, (req, res) => {
     selector: {
       $or: [
         { type: 'student' },
-        { type: 'teacher' }
-      ]
-    }
+        { type: 'teacher' },
+      ],
+    },
   }).then(result => res.send(result.docs.map(scrubUser)))
     .catch(createHandler(res));
 });
