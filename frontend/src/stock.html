@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
-  <head>
-    <meta charset="utf-8">
-    <title>Stock (Price)</title>
-  </head>
-  <body>
+
+<head>
+  <meta charset="utf-8">
+  <title>Stock (Price)</title>
+</head>
+
+<body>
+  <div id="app">
     <p id="stock"></p>
     <canvas id="chart" width="1000" height="300"></canvas>
-    <button id="add">Compare Stock</button> <p id="owned"></p>
+    <button id="add">Compare Stock</button>
+    <p id="owned"></p>
     <br>
     <div id="transact">
       <select id="type">
@@ -20,5 +24,7 @@
       <button id="go">GO!</button>
     </div>
     <script src="stocks/stock.js"></script>
-  </body>
+  </div>
+</body>
+
 </html>

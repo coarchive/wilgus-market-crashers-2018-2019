@@ -25,7 +25,6 @@ const scope = [
   'profile',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
-  'https://www.googleapis.com/auth/userinfo.profile',
 ];
 
 function createHandler(res) {
@@ -37,10 +36,7 @@ function createHandler(res) {
     return res.status(500).send(`Internal server error: ${JSON.stringify(err)}`);
   };
 }
-
-function error(str) {
-  return { error: str };
-}
+const error = str => ({ error: str });
 
 function ensureLogin(req, res, next) {
   if (req.user) {
@@ -276,7 +272,7 @@ app.get('/api/user/:email', ensureLogin, (req, res) => {
     sort: ['_id'],
   }).then(result => {
     if (result.warning) {
-      console.error(result.warning); // eslint-disable-line no-console
+      console.error(result.warning);
     }
     if (result.docs.length === 1) {
       res.send(scrubUser(result.docs[0]));
@@ -344,13 +340,13 @@ app.get('/login', (req, res) => {
 });
 
 app.get('/dashboard', (req, res) => {
+  console.log('getting db');
   if (req.user) {
     res.redirect('/dashboard.html');
   } else {
     res.redirect('/login.html');
   }
 });
-
 app.get('/logout', (req, res) => {
   req.logout();
   res.redirect('/login');

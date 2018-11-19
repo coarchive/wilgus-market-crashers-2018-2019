@@ -5,6 +5,8 @@ import {
 const linkStock = ticker => link(`/stock.html?stock=${ticker}`, ticker);
 const formatMoney = m => Math.round(m * 100) / 100;
 const welcome_e = geti('welcome');
+const first_name_e = geti('first-name');
+const last_name_e = geti('last-name');
 const money_e = geti('money');
 const stocks_e = geti('stocks');
 const history_e = geti('history');
@@ -14,7 +16,11 @@ fetch('/api/user')
   .then(res => res.json())
   .then(user => {
     // Display some basic info
-    welcome_e.innerText = `Welcome to the market, ${user.name}!`;
+    const n = user.name.split(' ');
+    console.log(n);
+    if (n.length === 2) {
+      [first_name_e.innerText, last_name_e.innerText] = n;
+    }
     money_e.innerText = `You have $${formatMoney(user.money)}.`;
     clear(history_e);
     const historyFragment = crdf();
