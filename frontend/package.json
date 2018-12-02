@@ -1,19 +1,6 @@
 {
   "name": "frontend",
   "version": "0.0.0",
-  "description": "My best package",
-  "main": "src/index.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/legodude17/frontend"
-  },
-  "keywords": [],
-  "author": "legodude17",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/legodude17/frontend/issues"
-  },
-  "homepage": "https://github.com/legodude17/frontend#readme",
   "devDependencies": {
     "@babel/core": "^7.1.2",
     "@babel/preset-env": "^7.1.0",
@@ -21,8 +8,8 @@
     "sass": "^1.14.1"
   },
   "scripts": {
-    "start": "parcel watch --cache-dir='../dist/.cache' --out-dir='../dist/public' src/dashboard.html",
-    "build": "parcel build --cache-dir='../dist/.cache' --out-dir='../dist/public' src/dashboard.html"
+    "start": "parcel watch --cache-dir='../dist/.cache' --out-dir='../dist/public' src/*.html",
+    "build": "parcel build --cache-dir='../dist/.cache' --out-dir='../dist/public' src/*.html"
   },
   "dependencies": {
     "chart.js": "^2.7.2"

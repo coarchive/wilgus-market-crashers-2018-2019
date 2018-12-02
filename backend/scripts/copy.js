@@ -1,37 +1,44 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const chalk = require("chalk");
+const { join } = require("path");
+const { exec } = require('child_process');
+require("console-group").install();
 
-const backend = path.join(__dirname, '..');
-const dist = path.join(backend, '..', 'dist');
-const CHBD = 'COPYHASBEENDONE';
-
-try {
-  if (fs.readFileSync(path.join(dist, `.${CHBD}`), 'utf8') === CHBD) {
-    process.exit(1);
-  }
-} catch (e) {
-  console.warn('Running Copy Process');
+const fsp = fs.promises;
+// this file runs in projectRoot/backend/scripts
+const backend = join(__dirname, "..");
+const dist = join(backend, "..", "dist");
+// projectRoot/dist
+const copied = join(dist, ".copied");
+if (fs.existsSync(copied)) {
+  process.exit(0);
 }
-
-const pkg = JSON.parse(fs.readFileSync(path.join(backend, 'package.json'), 'utf8'));
-
-fs.writeFileSync(
-  path.join(dist, 'package.json'),
-  JSON.stringify({
-    dependencies: pkg.dependencies,
-    name: 'crasher-server',
-    version: pkg.version
-  })
-);
-
-fs.writeFileSync(path.join(dist, 'config.json'), fs.readFileSync(path.join(backend, 'config.json'), 'utf8'));
-
-try {
-  fs.unlinkSync(path.join(dist, 'package-lock.json'));
-} catch (e) {
-  (_ => _)();
-}
-
-fs.writeFileSync(path.join(dist, `.${CHBD}`), CHBD);
-
-process.exit(0);
+console.group(chalk.yellow("Setting up dist!"));
+Promise.all([
+  fsp.readFile(join(backend, "package.json"), "utf8")
+    .then(JSON.parse)
+    .then(json => {
+      const { dependencies, name, version } = json;
+      fs.writeFileSync(
+        join(dist, "package.json"),
+        JSON.stringify({ dependencies, name, version }),
+      );
+    })
+    .then(() => {
+      console.log(chalk.green("Finished setting up dist/package.json"));
+    }),
+  fsp.copyFile(join(backend, "config.json"), join(dist, "config.json")),
+])
+  .then(() => {
+    console.log(chalk.green("Copied config.json"));
+    fs.writeFileSync(copied);
+    console.log(chalk.yellow("Installing Modules"));
+    exec("npm i", dist);
+    // const lockFile = join(dist, "package-lock.json");
+    // if (fs.existsSync(lockFile)) {
+    //   fs.unlinkSync(lockFile);
+    //   console.log(chalk.green("❌ Removed dist/package-lock.json"));
+    // }
+    console.groupEnd();
+    process.exit(0);
+  });

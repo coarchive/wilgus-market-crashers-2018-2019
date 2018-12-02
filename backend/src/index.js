@@ -1,37 +1,37 @@
-import express from 'express';
-import passport from 'passport';
-import session from 'express-session';
-import cookie from 'cookie-parser';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import path from 'path';
-import fs from 'fs';
-import PouchDB from 'pouchdb';
-import { google } from 'googleapis';
-import fetch from 'node-fetch';
-import { IEXClient } from 'iex-api';
-import pfind from 'pouchdb-find';
-import morgan from 'morgan';
-import { parse as jsonParse } from 'JSONStream';
+import express from "express";
+import passport from "passport";
+import session from "express-session";
+import cookie from "cookie-parser";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import path from "path";
+import fs from "fs";
+import PouchDB from "pouchdb";
+import { google } from "googleapis";
+import fetch from "node-fetch";
+import { IEXClient } from "iex-api";
+import pfind from "pouchdb-find";
+import morgan from "morgan";
+import { parse as jsonParse } from "JSONStream";
 
 PouchDB.plugin(pfind);
 
 const app = express();
-const users = new PouchDB('users');
+const users = new PouchDB("users");
 const iex = new IEXClient(fetch);
 
-const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
 const publicURL = `${config.publicURL}:${config.port}`;
 const scope = [
-  'profile',
-  'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/userinfo.profile',
+  "profile",
+  "https://www.googleapis.com/auth/userinfo.email",
+  "https://www.googleapis.com/auth/userinfo.profile",
 ];
 
 function createHandler(res) {
   return err => {
     console.error(err); // eslint-disable-line no-console
     if (err.statusCode) {
-      return res.status(err.statusCode).send(err.statusText || 'External server error');
+      return res.status(err.statusCode).send(err.statusText || "External server error");
     }
     return res.status(500).send(`Internal server error: ${JSON.stringify(err)}`);
   };
@@ -42,7 +42,7 @@ function ensureLogin(req, res, next) {
   if (req.user) {
     next();
   } else {
-    res.status(401).send(error('Unauthorized'));
+    res.status(401).send(error("Unauthorized"));
   }
 }
 
@@ -54,7 +54,7 @@ function scrubUser(user) {
   return userCopy;
 }
 
-app.use(express.static(path.join(__dirname, 'public'), { index: false }));
+app.use(express.static(path.join(__dirname, "public"), { index: false }));
 app.use(cookie());
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
@@ -64,7 +64,7 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(morgan('tiny'));
+app.use(morgan("tiny"));
 
 passport.serializeUser((user, done) => done(null, user._id));
 passport.deserializeUser((id, done) => users.get(id).then(user => done(null, user)).catch(done));
@@ -80,7 +80,7 @@ passport.use(new GoogleStrategy({
     refresh_token: refreshToken,
   });
   const people = google.people({
-    version: 'v1',
+    version: "v1",
     auth: client,
   });
   users.get(profile.id)
@@ -102,17 +102,17 @@ passport.use(new GoogleStrategy({
           history: [],
         };
         people.people.get({
-          resourceName: 'people/me',
-          personFields: 'emailAddresses',
+          resourceName: "people/me",
+          personFields: "emailAddresses",
         }).then(({ data }) => {
           const email = data.emailAddresses[0].value;
           user.email = email;
-          if (email.slice(email.indexOf('@')) !== '@dtechhs.org') {
-            const e = Error('You have to login with an @dtechhs.org email.');
-            e.name = 'ArtificialRestriction';
+          if (email.slice(email.indexOf("@")) !== "@dtechhs.org") {
+            const e = Error("You have to login with an @dtechhs.org email.");
+            e.name = "ArtificialRestriction";
             return Promise.reject(e);
           }
-          user.type = /\d/.test(email) ? 'student' : 'teacher';
+          user.type = /\d/.test(email) ? "student" : "teacher";
           return users.put(user);
         }).then(() => cb(null, user)).catch(err => {
           console.error(err);
@@ -124,24 +124,24 @@ passport.use(new GoogleStrategy({
     });
 }));
 
-app.get('/auth/google', passport.authenticate('google', { scope }));
+app.get("/auth/google", passport.authenticate("google", { scope }));
 
-app.get('/auth/google/callback',
-  passport.authenticate('google', { scopes: ['profile'], failureRedirect: '/login' }),
+app.get("/auth/google/callback",
+  passport.authenticate("google", { scopes: ["profile"], failureRedirect: "/login" }),
   (req, res) => {
-    res.redirect('/dashboard');
+    res.redirect("/dashboard");
   });
 
-app.get('/api/user', ensureLogin, (req, res) => {
+app.get("/api/user", ensureLogin, (req, res) => {
   res.send(req.user);
 });
 
-app.get('/api/stock/:ticker', (req, res) => {
+app.get("/api/stock/:ticker", (req, res) => {
   const includeChart = req.query.chart == null ? false : Boolean(req.query.chart);
   const includeNews = req.query.news == null ? false : Boolean(req.query.news);
   const { ticker } = req.params;
   if (!ticker || ticker !== ticker.toString()) {
-    res.status(400).send(error('Invalid or missing ticker'));
+    res.status(400).send(error("Invalid or missing ticker"));
     return;
   }
   const stock = {};
@@ -152,7 +152,7 @@ app.get('/api/stock/:ticker', (req, res) => {
     })
     .then(price => {
       stock.price = price;
-      return includeChart ? iex.stockChart(ticker, '1m') : false;
+      return includeChart ? iex.stockChart(ticker, "1m") : false;
     })
     .then(chart => {
       if (chart) {
@@ -169,26 +169,26 @@ app.get('/api/stock/:ticker', (req, res) => {
     .catch(createHandler(res));
 });
 
-app.get('/api/buy/:ticker', ensureLogin, (req, res) => {
+app.get("/api/buy/:ticker", ensureLogin, (req, res) => {
   const { ticker } = req.params;
   const amount = req.query.amount == null ? 1 : +req.query.amount;
   if (!Number.isInteger(amount)) {
-    res.status(400).send(error('Amount must be an integer'));
+    res.status(400).send(error("Amount must be an integer"));
   }
   const stocks = req.user.stocks.filter(stock => stock.ticker === ticker);
   if (stocks.length > 1) {
-    throw new Error('ERROR: Database Corrupt');
+    throw new Error("ERROR: Database Corrupt");
   }
   let stock = stocks.length === 0 ? null : stocks[0];
   iex.stockPrice(ticker)
     .then(price => {
-      if (price === 'Unknown symbol') {
+      if (price === "Unknown symbol") {
         res.status(400).send(error(price));
         return false;
       }
       const onMargin = req.user.money < price * amount;
       req.user.history.push({
-        type: 'buy',
+        type: "buy",
         ticker,
         amount,
         price,
@@ -196,7 +196,7 @@ app.get('/api/buy/:ticker', ensureLogin, (req, res) => {
       });
       if (stock) {
         if (onMargin) {
-          res.status(400).send(error('Not enough money')); // TODO: Buy the same stock on and off margin
+          res.status(400).send(error("Not enough money")); // TODO: Buy the same stock on and off margin
           return false;
         }
         stock.amount += amount;
@@ -217,11 +217,11 @@ app.get('/api/buy/:ticker', ensureLogin, (req, res) => {
     .catch(createHandler(res));
 });
 
-app.get('/api/sell/:ticker', ensureLogin, (req, res) => {
+app.get("/api/sell/:ticker", ensureLogin, (req, res) => {
   const { ticker } = req.params;
   const amount = req.query.amount == null ? 1 : +req.query.amount;
   if (!Number.isInteger(amount)) {
-    res.status(400).send(error('Amount must be an integer'));
+    res.status(400).send(error("Amount must be an integer"));
   }
   let idx;
   const stocks = req.user.stocks.filter((stock, i) => {
@@ -235,16 +235,16 @@ app.get('/api/sell/:ticker', ensureLogin, (req, res) => {
     req.status(400).send(error(`User doesn't have stock "${ticker}"`));
   }
   if (stocks.length !== 1) {
-    throw new Error('ERROR: Database Corrupt');
+    throw new Error("ERROR: Database Corrupt");
   }
   const stock = stocks[0];
   if (stock.amount < amount) {
-    res.status(400).send(error('Cannot sell more than owned'));
+    res.status(400).send(error("Cannot sell more than owned"));
   }
   iex.stockPrice(ticker)
     .then(price => {
       req.user.history.push({
-        type: 'sell',
+        type: "sell",
         ticker,
         amount,
         price,
@@ -265,11 +265,11 @@ app.get('/api/sell/:ticker', ensureLogin, (req, res) => {
     .catch(createHandler(res));
 });
 
-app.get('/api/user/:email', ensureLogin, (req, res) => {
+app.get("/api/user/:email", ensureLogin, (req, res) => {
   const { email } = req.params;
   users.find({
     selector: { email },
-    sort: ['_id'],
+    sort: ["_id"],
   }).then(result => {
     if (result.warning) {
       console.error(result.warning);
@@ -279,37 +279,37 @@ app.get('/api/user/:email', ensureLogin, (req, res) => {
     } else if (result.docs.length === 0) {
       res.status(404).send(error(`No user with email ${email}`));
     } else {
-      throw new Error('ERROR: Database Corrupt');
+      throw new Error("ERROR: Database Corrupt");
     }
   }).catch(createHandler(res));
 });
 
-app.get('/api/users', ensureLogin, (req, res) => {
+app.get("/api/users", ensureLogin, (req, res) => {
   const limit = req.query.limit == null ? 1 : +req.query.limit;
   if (!Number.isInteger(limit)) {
-    res.status(400).send(error('limit must be an integer'));
+    res.status(400).send(error("limit must be an integer"));
   }
   users.find({
     selector: {
       $or: [
-        { type: 'student' },
-        { type: 'teacher' },
+        { type: "student" },
+        { type: "teacher" },
       ],
     },
   }).then(result => res.send(result.docs.map(scrubUser)))
     .catch(createHandler(res));
 });
 
-app.get('/api/stocks/search/:query', (req, res) => {
+app.get("/api/stocks/search/:query", (req, res) => {
   const { query } = req.params;
   if (!query) {
-    res.status(400).send(error('Must provide a query'));
+    res.status(400).send(error("Must provide a query"));
   }
-  fetch('https://api.iextrading.com/1.0/ref-data/symbols').then(result => {
-    const stream = result.body.pipe(jsonParse('*'));
+  fetch("https://api.iextrading.com/1.0/ref-data/symbols").then(result => {
+    const stream = result.body.pipe(jsonParse("*"));
     const stocks = [];
     let success = true;
-    stream.on('data', data => {
+    stream.on("data", data => {
       if (
         data.symbol.toLowerCase().includes(query.toLowerCase())
         || data.name.toLowerCase().includes(query.toLowerCase())
@@ -317,11 +317,11 @@ app.get('/api/stocks/search/:query', (req, res) => {
         stocks.push(data);
       }
     });
-    result.body.on('error', err => {
+    result.body.on("error", err => {
       res.status(500).send(error(`Internal server error: ${err}`));
       success = false;
     });
-    result.body.on('finish', () => {
+    result.body.on("finish", () => {
       if (success) {
         res.send({ stocks, query });
       }
@@ -329,27 +329,27 @@ app.get('/api/stocks/search/:query', (req, res) => {
   }).catch(createHandler());
 });
 
-app.get('/', (req, res) => res.redirect('/login'));
+app.get("/", (req, res) => res.redirect("/login"));
 
-app.get('/login', (req, res) => {
+app.get("/login", (req, res) => {
   if (req.user) {
-    res.redirect('/dashboard.html');
+    res.redirect("/dashboard.html");
   } else {
-    res.redirect('/login.html');
+    res.redirect("/login.html");
   }
 });
 
-app.get('/dashboard', (req, res) => {
-  console.log('getting db');
+app.get("/dashboard", (req, res) => {
+  console.log("getting db");
   if (req.user) {
-    res.redirect('/dashboard.html');
+    res.redirect("/dashboard.html");
   } else {
-    res.redirect('/login.html');
+    res.redirect("/login.html");
   }
 });
-app.get('/logout', (req, res) => {
+app.get("/logout", (req, res) => {
   req.logout();
-  res.redirect('/login');
+  res.redirect("/login");
 });
 
-app.listen(config.port, () => console.log('Ready!')); // eslint-disable-line no-console
+app.listen(config.port, () => console.log("Ready!")); // eslint-disable-line no-console

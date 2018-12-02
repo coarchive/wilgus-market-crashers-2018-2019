@@ -1,14 +1,14 @@
 {
   "name": "crasher",
-  "version": "0.0.0",
-  "description": "My best package",
+  "version": "0.1.0",
+  "description": "Crash the Market!",
   "main": "index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/legodude17/crasher"
   },
   "keywords": [],
-  "author": "legodude17",
+  "author": "legodude17, Coalpha",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/legodude17/crasher/issues"
@@ -27,6 +27,5 @@
     "purge": "rm -rf dist/",
     "postinstall": "(cd frontend && npm i) & (cd backend && npm i)"
   },
-  "dependencies": {},
   "private": true
 }

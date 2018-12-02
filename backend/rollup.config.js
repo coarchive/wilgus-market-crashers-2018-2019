@@ -1,27 +1,27 @@
-import resolve from 'rollup-plugin-node-resolve';
-import babel from 'rollup-plugin-babel';
-import commonjs from 'rollup-plugin-commonjs';
-import run from 'rollup-plugin-run';
-import path from 'path';
+import resolve from "rollup-plugin-node-resolve";
+import commonjs from "rollup-plugin-commonjs";
+import babel from "rollup-plugin-babel";
+import run from "rollup-plugin-run";
+import { join } from "path";
 
 export default {
-  input: 'src/index.js',
+  input: "src/index.js",
   output: {
-    file: '../dist/server.js',
-    format: 'cjs'
+    file: "../dist/server.js",
+    format: "cjs",
   },
   plugins: [
     resolve(),
     commonjs(),
     babel({
-      exclude: 'node_modules/**'
+      exclude: "node_modules/**",
     }),
     run({
-      cwd: path.join(__dirname, '..', 'dist')
-    })
+      cwd: join(__dirname, "..", "dist"),
+    }),
   ],
-  external: path => !path.startsWith('.'),
+  external: filePath => !filePath.startsWith("."),
   watch: {
-    clearScreen: false
-  }
+    clearScreen: false,
+  },
 };
