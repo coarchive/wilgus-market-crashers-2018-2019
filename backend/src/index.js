@@ -9,49 +9,40 @@ import PouchDB from "pouchdb";
 import { google } from "googleapis";
 import fetch from "node-fetch";
 import { IEXClient } from "iex-api";
-import pfind from "pouchdb-find";
+// import pfind from "pouchdb-find";
 import morgan from "morgan";
 import { parse as jsonParse } from "JSONStream";
+import scrubUser from "./scrubUser";
 
-PouchDB.plugin(pfind);
+// PouchDB.plugin(pfind);
+const users = new PouchDB("users")
+const IEXCache = new PouchDB("IEXCache");
 
-const app = express();
-const users = new PouchDB("users");
 const iex = new IEXClient(fetch);
+const app = express();
 
-const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
+const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"))
+
 const publicURL = `${config.publicURL}:${config.port}`;
-const scope = [
-  "profile",
-  "https://www.googleapis.com/auth/userinfo.email",
-  "https://www.googleapis.com/auth/userinfo.profile",
-];
+const { scope } = config;
 
 function createHandler(res) {
   return err => {
-    console.error(err); // eslint-disable-line no-console
+    console.error(err);
     if (err.statusCode) {
       return res.status(err.statusCode).send(err.statusText || "External server error");
     }
     return res.status(500).send(`Internal server error: ${JSON.stringify(err)}`);
   };
 }
-const error = str => ({ error: str });
+const errorWrapper = str => ({ error: str });
 
 function ensureLogin(req, res, next) {
   if (req.user) {
     next();
   } else {
-    res.status(401).send(error("Unauthorized"));
+    res.status(401).send(errorWrapper("Unauthorized"));
   }
-}
-
-function scrubUser(user) {
-  const userCopy = Object.assign({}, user);
-  delete userCopy.tokens;
-  delete userCopy._rev;
-  delete userCopy._id;
-  return userCopy;
 }
 
 app.use(express.static(path.join(__dirname, "public"), { index: false }));
@@ -104,20 +95,24 @@ passport.use(new GoogleStrategy({
         people.people.get({
           resourceName: "people/me",
           personFields: "emailAddresses",
-        }).then(({ data }) => {
-          const email = data.emailAddresses[0].value;
-          user.email = email;
-          if (email.slice(email.indexOf("@")) !== "@dtechhs.org") {
-            const e = Error("You have to login with an @dtechhs.org email.");
-            e.name = "ArtificialRestriction";
-            return Promise.reject(e);
-          }
-          user.type = /\d/.test(email) ? "student" : "teacher";
-          return users.put(user);
-        }).then(() => cb(null, user)).catch(err => {
-          console.error(err);
-          cb(err);
-        });
+        })
+          .then(({ data }) => {
+            const email = data.emailAddresses[0].value;
+            user.email = email;
+            if (email.slice(email.indexOf("@")) !== "@dtechhs.org") {
+              const e = Error("You have to login with an @dtechhs.org email.");
+              e.name = "ArtificialRestriction";
+              return Promise.reject(e);
+            }
+            user.type = /\d/.test(email) ? "student" : "teacher";
+            return users.put(user);
+          })
+          .then(() => cb(null, user))
+          .catch(e => {
+            // I'm not exactly sure what this does
+            console.error(e);
+            cb(e);
+          });
         return;
       }
       cb(err);
@@ -130,7 +125,8 @@ app.get("/auth/google/callback",
   passport.authenticate("google", { scopes: ["profile"], failureRedirect: "/login" }),
   (req, res) => {
     res.redirect("/dashboard");
-  });
+  },
+);
 
 app.get("/api/user", ensureLogin, (req, res) => {
   res.send(req.user);
@@ -141,7 +137,7 @@ app.get("/api/stock/:ticker", (req, res) => {
   const includeNews = req.query.news == null ? false : Boolean(req.query.news);
   const { ticker } = req.params;
   if (!ticker || ticker !== ticker.toString()) {
-    res.status(400).send(error("Invalid or missing ticker"));
+    res.status(400).send(errorWrapper("Invalid or missing ticker"));
     return;
   }
   const stock = {};
@@ -171,9 +167,9 @@ app.get("/api/stock/:ticker", (req, res) => {
 
 app.get("/api/buy/:ticker", ensureLogin, (req, res) => {
   const { ticker } = req.params;
-  const amount = req.query.amount == null ? 1 : +req.query.amount;
+  const amount = req.query.amount == null ? 1 : Number(req.query.amount);
   if (!Number.isInteger(amount)) {
-    res.status(400).send(error("Amount must be an integer"));
+    res.status(400).send(errorWrapper("Amount must be an integer"));
   }
   const stocks = req.user.stocks.filter(stock => stock.ticker === ticker);
   if (stocks.length > 1) {
@@ -183,7 +179,7 @@ app.get("/api/buy/:ticker", ensureLogin, (req, res) => {
   iex.stockPrice(ticker)
     .then(price => {
       if (price === "Unknown symbol") {
-        res.status(400).send(error(price));
+        res.status(400).send(errorWrapper(price));
         return false;
       }
       const onMargin = req.user.money < price * amount;
@@ -196,7 +192,7 @@ app.get("/api/buy/:ticker", ensureLogin, (req, res) => {
       });
       if (stock) {
         if (onMargin) {
-          res.status(400).send(error("Not enough money")); // TODO: Buy the same stock on and off margin
+          res.status(400).send(errorWrapper("Not enough money")); // TODO: Buy the same stock on and off margin
           return false;
         }
         stock.amount += amount;
@@ -221,7 +217,7 @@ app.get("/api/sell/:ticker", ensureLogin, (req, res) => {
   const { ticker } = req.params;
   const amount = req.query.amount == null ? 1 : +req.query.amount;
   if (!Number.isInteger(amount)) {
-    res.status(400).send(error("Amount must be an integer"));
+    res.status(400).send(errorWrapper("Amount must be an integer"));
   }
   let idx;
   const stocks = req.user.stocks.filter((stock, i) => {
@@ -232,14 +228,14 @@ app.get("/api/sell/:ticker", ensureLogin, (req, res) => {
     return false;
   });
   if (stocks.length === 0) {
-    req.status(400).send(error(`User doesn't have stock "${ticker}"`));
+    req.status(400).send(errorWrapper(`User doesn't have stock "${ticker}"`));
   }
   if (stocks.length !== 1) {
     throw new Error("ERROR: Database Corrupt");
   }
   const stock = stocks[0];
   if (stock.amount < amount) {
-    res.status(400).send(error("Cannot sell more than owned"));
+    res.status(400).send(errorWrapper("Cannot sell more than owned"));
   }
   iex.stockPrice(ticker)
     .then(price => {
@@ -277,7 +273,7 @@ app.get("/api/user/:email", ensureLogin, (req, res) => {
     if (result.docs.length === 1) {
       res.send(scrubUser(result.docs[0]));
     } else if (result.docs.length === 0) {
-      res.status(404).send(error(`No user with email ${email}`));
+      res.status(404).send(errorWrapper(`No user with email ${email}`));
     } else {
       throw new Error("ERROR: Database Corrupt");
     }
@@ -287,7 +283,7 @@ app.get("/api/user/:email", ensureLogin, (req, res) => {
 app.get("/api/users", ensureLogin, (req, res) => {
   const limit = req.query.limit == null ? 1 : +req.query.limit;
   if (!Number.isInteger(limit)) {
-    res.status(400).send(error("limit must be an integer"));
+    res.status(400).send(errorWrapper("limit must be an integer"));
   }
   users.find({
     selector: {
@@ -303,7 +299,7 @@ app.get("/api/users", ensureLogin, (req, res) => {
 app.get("/api/stocks/search/:query", (req, res) => {
   const { query } = req.params;
   if (!query) {
-    res.status(400).send(error("Must provide a query"));
+    res.status(400).send(errorWrapper("Must provide a query"));
   }
   fetch("https://api.iextrading.com/1.0/ref-data/symbols").then(result => {
     const stream = result.body.pipe(jsonParse("*"));
@@ -318,7 +314,7 @@ app.get("/api/stocks/search/:query", (req, res) => {
       }
     });
     result.body.on("error", err => {
-      res.status(500).send(error(`Internal server error: ${err}`));
+      res.status(500).send(errorWrapper(`Internal server error: ${err}`));
       success = false;
     });
     result.body.on("finish", () => {
@@ -352,4 +348,4 @@ app.get("/logout", (req, res) => {
   res.redirect("/login");
 });
 
-app.listen(config.port, () => console.log("Ready!")); // eslint-disable-line no-console
+app.listen(config.port, () => console.log(`Serving on port ${config.port}!`));

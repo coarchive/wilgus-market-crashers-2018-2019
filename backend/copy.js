@@ -1,13 +1,12 @@
 const fs = require("fs");
 const chalk = require("chalk");
 const { join } = require("path");
-const { exec } = require('child_process');
+const { exec } = require("child_process");
 require("console-group").install();
 
 const fsp = fs.promises;
-// this file runs in projectRoot/backend/scripts
-const backend = join(__dirname, "..");
-const dist = join(backend, "..", "dist");
+// this file runs in projectRoot/backend/
+const dist = join(__dirname, "..", "dist");
 // projectRoot/dist
 const copied = join(dist, ".copied");
 if (fs.existsSync(copied)) {
@@ -15,19 +14,18 @@ if (fs.existsSync(copied)) {
 }
 console.group(chalk.yellow("Setting up dist!"));
 Promise.all([
-  fsp.readFile(join(backend, "package.json"), "utf8")
+  fsp.readFile(join(__dirname, "package.json"), "utf8")
     .then(JSON.parse)
-    .then(json => {
-      const { dependencies, name, version } = json;
+    .then(({ buildDependencies, name, version }) => {
       fs.writeFileSync(
         join(dist, "package.json"),
-        JSON.stringify({ dependencies, name, version }),
+        JSON.stringify({ dependencies: buildDependencies, name, version }),
       );
     })
     .then(() => {
       console.log(chalk.green("Finished setting up dist/package.json"));
     }),
-  fsp.copyFile(join(backend, "config.json"), join(dist, "config.json")),
+  fsp.copyFile(join(__dirname, "config.json"), join(dist, "config.json")),
 ])
   .then(() => {
     console.log(chalk.green("Copied config.json"));

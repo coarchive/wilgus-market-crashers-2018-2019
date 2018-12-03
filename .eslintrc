@@ -4,6 +4,7 @@
     "import/no-extraneous-dependencies": "off",
     "arrow-parens": ["error", "as-needed"],
     "max-len": ["warn", { "code": 120 }],
+    "function-paren-newline": "off",
     "no-underscore-dangle": "off",
     "quotes": ["error", "double"],
     "no-param-reassign": "off",
@@ -11,6 +12,7 @@
     "indent": ["error", 2],
     "no-return-assign": 1,
     "no-plusplus": "off",
+    "no-console": "off",
     "camelcase": "off",
     "no-empty": "off"
   },
