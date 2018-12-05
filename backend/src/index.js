@@ -13,7 +13,7 @@ import { IEXClient } from "iex-api";
 import morgan from "morgan";
 import { parse as jsonParse } from "JSONStream";
 import chalk from "chalk";
-import rimraf from "rimraf";
+import { sync as rimraf } from "rimraf";
 
 function scrubUser(user) {
   const userCopy = Object.assign({}, user);
@@ -24,8 +24,9 @@ function scrubUser(user) {
 }
 // PouchDB.plugin(pfind);
 if (fs.existsSync("./users")) {
-  console.log(chalk.bgYellow`users exists`);
-  rimraf("./users", () => 0);
+  console.log(chalk.bgYellow.black`./users exists`);
+  rimraf("./users");
+  console.log(chalk.green`Removed ./users`);
 }
 const users = new PouchDB("users");
 
@@ -80,18 +81,24 @@ app.use(noHTMLWithoutLogin);
 app.use(express.static(publicPath, { index: false }));
 
 passport.serializeUser((user, done) => done(null, user._id));
-passport.deserializeUser(async (id, done) => {
-  const user = await users.get(id).catch(done);
-  done(null, user);
-});
+passport.deserializeUser((id, done) => users.get(id).then(user => done(null, user)).catch(done));
 
+async function putUser(user, cb) {
+  try {
+    await users.put(user);
+    cb(null, user);
+  } catch (putError) {
+    console.log(chalk.bgRed`pouchdb put error!`);
+    cb(putError);
+  }
+}
 passport.use(
   new GoogleStrategy({
     clientID: config.clientID,
     clientSecret: config.clientSecret,
     callbackURL: `${publicURL}/auth/google/callback`,
   },
-  (accessToken, refreshToken, profile, cb) => {
+  async (accessToken, refreshToken, profile, cb) => {
     const client = new google.auth.OAuth2();
     client.setCredentials({
       access_token: accessToken,
@@ -101,51 +108,60 @@ passport.use(
       version: "v1",
       auth: client,
     });
-    users.get(profile.id)
-      .then(user => {
-        user.tokens.accessToken = accessToken;
-        user.tokens.refreshToken = refreshToken;
-        users.put(user).then(() => cb(null, user)).catch(cb);
-      })
-      .catch(async err => {
-        if (err.status !== 404) {
-          // it could find the user within the db
-          cb(err);
+    try {
+      const user = await users.get(profile.id);
+      // check database
+      user.tokens.accessToken = accessToken;
+      user.tokens.refreshToken = refreshToken;
+      putUser(user);
+      // no need to await since there's no more code that executes in this function
+    } catch (userError) {
+      // if fetching the user fails
+      if (userError.status !== 404) {
+        // wasn't expecting this error
+        cb(userError);
+        return;
+      }
+      console.log(chalk.yellow`Failed to find user within the database`);
+      // the user wasn't found in the db
+      const user = {
+        _id: profile.id,
+        name: profile.displayName,
+        tokens: {
+          accessToken, refreshToken,
+        },
+        stocks: [],
+        money: 0,
+        history: [],
+      };
+      console.log(chalk.cyan`Making new user Object`);
+      // as the code continues, this object is going to be mutated
+      // it will then be stored in the database
+      try {
+        const { data } = await people.people.get({
+          resourceName: "people/me",
+          personFields: "emailAddresses,photos",
+        });
+        const email = data.emailAddresses.filter(v => v.metadata.primary && v.metadata.verified)[0].value;
+        user.email = email;
+        if (email.slice(email.indexOf("@")) !== "@dtechhs.org") {
+          const aEError = Error("You have to login with an @dtechhs.org email.");
+          aEError.name = "ArtificialRestriction";
+          cb(aEError);
           return;
         }
-        const user = {
-          _id: profile.id,
-          name: profile.displayName,
-          tokens: {
-            accessToken, refreshToken,
-          },
-          stocks: [],
-          money: 0,
-          history: [],
-        };
-        try {
-          const { data } = await people.people.get({
-            resourceName: "people/me",
-            personFields: "emailAddresses,photos",
-          });
-          const email = data.emailAddresses.filter(v => v.metadata.primary && v.metadata.verified)[0].value;
-          user.email = email;
-          if (email.slice(email.indexOf("@")) !== "@dtechhs.org") {
-            const e = Error("You have to login with an @dtechhs.org email.");
-            e.name = "ArtificialRestriction";
-            cb(e);
-            return;
-          }
-          user.type = /\d/.test(email) ? "student" : "teacher";
-          user.aaaaaa = 1;
-          user.aaaaaaIII = 2;
-          user.profilePictureURL = data.photos.filter(v => v.metadata.primary)[0].url || "cannot findd";
-          cb(null, await users.put(user));
-        } catch (e) {
-          console.log(chalk.bgRed`there was an error`);
-          cb(e);
-        }
-      });
+        console.log(chalk.green`Email OK`);
+        user.type = /\d/.test(email) ? "student" : "teacher";
+        // cgannon19@dtechhs.org is a student while mmizel@dtechhs.org is a teacher / non student
+        user.newField = "truefalse";
+        user.profilePictureURL = data.photos.filter(v => v.metadata.primary)[0].url || "cannot find";
+        await putUser(user, cb);
+        cb(null, user);
+      } catch (fetchError) {
+        console.log(chalk.bgRed`Error fetching data from Google`);
+        cb(fetchError);
+      }
+    }
   }));
 
 app.get("/auth/google", passport.authenticate("google", { scope }));
