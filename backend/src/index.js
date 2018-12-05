@@ -16,6 +16,8 @@ import chalk from "chalk";
 import { sync as rimraf } from "rimraf";
 
 function scrubUser(user) {
+  // contrary to it's name, scrubUser does not scrub the user information from the database
+  // it just removed
   const userCopy = Object.assign({}, user);
   delete userCopy.tokens;
   delete userCopy._rev;
@@ -153,10 +155,8 @@ passport.use(
         console.log(chalk.green`Email OK`);
         user.type = /\d/.test(email) ? "student" : "teacher";
         // cgannon19@dtechhs.org is a student while mmizel@dtechhs.org is a teacher / non student
-        user.newField = "truefalse";
         user.profilePictureURL = data.photos.filter(v => v.metadata.primary)[0].url || "cannot find";
-        await putUser(user, cb);
-        cb(null, user);
+        putUser(user, cb);
       } catch (fetchError) {
         console.log(chalk.bgRed`Error fetching data from Google`);
         cb(fetchError);
