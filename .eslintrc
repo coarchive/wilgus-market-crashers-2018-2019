@@ -6,6 +6,7 @@
     "max-len": ["warn", { "code": 120 }],
     "function-paren-newline": "off",
     "no-underscore-dangle": "off",
+    "import/no-unresolved": "off",
     "quotes": ["error", "double"],
     "no-param-reassign": "off",
     "no-multi-assign": "off",

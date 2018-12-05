@@ -3,9 +3,9 @@ const chalk = require("chalk");
 const { join } = require("path");
 const { exec } = require("child_process");
 require("console-group").install();
+// this file runs in projectRoot/backend/
 
 const fsp = fs.promises;
-// this file runs in projectRoot/backend/
 const dist = join(__dirname, "..", "dist");
 // projectRoot/dist
 const copied = join(dist, ".copied");
@@ -16,10 +16,19 @@ console.group(chalk.yellow("Setting up dist!"));
 Promise.all([
   fsp.readFile(join(__dirname, "package.json"), "utf8")
     .then(JSON.parse)
-    .then(({ buildDependencies, name, version }) => {
+    .then(({
+      buildDependencies,
+      dependencies,
+      version,
+      name,
+    }) => {
       fs.writeFileSync(
         join(dist, "package.json"),
-        JSON.stringify({ dependencies: buildDependencies, name, version }),
+        JSON.stringify({
+          dependencies: Object.assign(buildDependencies, dependencies),
+          name,
+          version,
+        }),
       );
     })
     .then(() => {
@@ -31,12 +40,8 @@ Promise.all([
     console.log(chalk.green("Copied config.json"));
     fs.writeFileSync(copied);
     console.log(chalk.yellow("Installing Modules"));
-    exec("npm i", dist);
-    // const lockFile = join(dist, "package-lock.json");
-    // if (fs.existsSync(lockFile)) {
-    //   fs.unlinkSync(lockFile);
-    //   console.log(chalk.green("❌ Removed dist/package-lock.json"));
-    // }
+    exec("npm i --no-audit", dist);
+    exec("npm i --no-audit", dist);
     console.groupEnd();
     process.exit(0);
   });

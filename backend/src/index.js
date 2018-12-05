@@ -12,19 +12,30 @@ import { IEXClient } from "iex-api";
 // import pfind from "pouchdb-find";
 import morgan from "morgan";
 import { parse as jsonParse } from "JSONStream";
-import scrubUser from "./scrubUser";
+import chalk from "chalk";
+import rimraf from "rimraf";
 
+function scrubUser(user) {
+  const userCopy = Object.assign({}, user);
+  delete userCopy.tokens;
+  delete userCopy._rev;
+  delete userCopy._id;
+  return userCopy;
+}
 // PouchDB.plugin(pfind);
-const users = new PouchDB("users")
-const IEXCache = new PouchDB("IEXCache");
+if (fs.existsSync("./users")) {
+  console.log(chalk.bgYellow`users exists`);
+  rimraf("./users", () => 0);
+}
+const users = new PouchDB("users");
 
 const iex = new IEXClient(fetch);
 const app = express();
 
-const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"))
+const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
 
 const publicURL = `${config.publicURL}:${config.port}`;
-const { scope } = config;
+const scope = config.gscope;
 
 function createHandler(res) {
   return err => {
@@ -37,16 +48,22 @@ function createHandler(res) {
 }
 const errorWrapper = str => ({ error: str });
 
-function ensureLogin(req, res, next) {
-  if (req.user) {
-    next();
-  } else {
-    res.status(401).send(errorWrapper("Unauthorized"));
+const notLoggedIn = req => !req.user;
+const currentFileIsHtml = req => /.html$/.test(req.path);
+// I'm well aware that I can use `!!`
+const redirect2Login = res => res.status(401).redirect("/login");
+function noHTMLWithoutLogin(req, res, next) {
+  if (notLoggedIn(req) && currentFileIsHtml(req)) {
+    console.log(chalk.bgRed("Serving HTML not allowed without auth!"));
+    redirect2Login(res);
   }
+  next();
 }
-
-app.use(express.static(path.join(__dirname, "public"), { index: false }));
+const ensureLogin = (req, res, next) => (notLoggedIn(req) ? redirect2Login(res) : next());
+const publicPath = path.join(__dirname, "public");
+const sendFile = fileName => (_, res) => res.sendFile(path.join(publicPath, fileName));
 app.use(cookie());
+// parse cookies
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: config.secret,
@@ -56,32 +73,46 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(morgan("tiny"));
+// log everything
+app.get("/login", sendFile("login.html"));
+// maybe serve the login pages
+app.use(noHTMLWithoutLogin);
+app.use(express.static(publicPath, { index: false }));
 
 passport.serializeUser((user, done) => done(null, user._id));
-passport.deserializeUser((id, done) => users.get(id).then(user => done(null, user)).catch(done));
+passport.deserializeUser(async (id, done) => {
+  const user = await users.get(id).catch(done);
+  done(null, user);
+});
 
-passport.use(new GoogleStrategy({
-  clientID: config.clientID,
-  clientSecret: config.clientSecret,
-  callbackURL: `${publicURL}/auth/google/callback`,
-}, (accessToken, refreshToken, profile, cb) => {
-  const client = new google.auth.OAuth2();
-  client.setCredentials({
-    access_token: accessToken,
-    refresh_token: refreshToken,
-  });
-  const people = google.people({
-    version: "v1",
-    auth: client,
-  });
-  users.get(profile.id)
-    .then(user => {
-      user.tokens.accessToken = accessToken;
-      user.tokens.refreshToken = refreshToken;
-      users.put(user).then(() => cb(null, user)).catch(cb);
-    })
-    .catch(err => {
-      if (err.status === 404) {
+passport.use(
+  new GoogleStrategy({
+    clientID: config.clientID,
+    clientSecret: config.clientSecret,
+    callbackURL: `${publicURL}/auth/google/callback`,
+  },
+  (accessToken, refreshToken, profile, cb) => {
+    const client = new google.auth.OAuth2();
+    client.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    const people = google.people({
+      version: "v1",
+      auth: client,
+    });
+    users.get(profile.id)
+      .then(user => {
+        user.tokens.accessToken = accessToken;
+        user.tokens.refreshToken = refreshToken;
+        users.put(user).then(() => cb(null, user)).catch(cb);
+      })
+      .catch(async err => {
+        if (err.status !== 404) {
+          // it could find the user within the db
+          cb(err);
+          return;
+        }
         const user = {
           _id: profile.id,
           name: profile.displayName,
@@ -92,32 +123,30 @@ passport.use(new GoogleStrategy({
           money: 0,
           history: [],
         };
-        people.people.get({
-          resourceName: "people/me",
-          personFields: "emailAddresses",
-        })
-          .then(({ data }) => {
-            const email = data.emailAddresses[0].value;
-            user.email = email;
-            if (email.slice(email.indexOf("@")) !== "@dtechhs.org") {
-              const e = Error("You have to login with an @dtechhs.org email.");
-              e.name = "ArtificialRestriction";
-              return Promise.reject(e);
-            }
-            user.type = /\d/.test(email) ? "student" : "teacher";
-            return users.put(user);
-          })
-          .then(() => cb(null, user))
-          .catch(e => {
-            // I'm not exactly sure what this does
-            console.error(e);
-            cb(e);
+        try {
+          const { data } = await people.people.get({
+            resourceName: "people/me",
+            personFields: "emailAddresses,photos",
           });
-        return;
-      }
-      cb(err);
-    });
-}));
+          const email = data.emailAddresses.filter(v => v.metadata.primary && v.metadata.verified)[0].value;
+          user.email = email;
+          if (email.slice(email.indexOf("@")) !== "@dtechhs.org") {
+            const e = Error("You have to login with an @dtechhs.org email.");
+            e.name = "ArtificialRestriction";
+            cb(e);
+            return;
+          }
+          user.type = /\d/.test(email) ? "student" : "teacher";
+          user.aaaaaa = 1;
+          user.aaaaaaIII = 2;
+          user.profilePictureURL = data.photos.filter(v => v.metadata.primary)[0].url || "cannot findd";
+          cb(null, await users.put(user));
+        } catch (e) {
+          console.log(chalk.bgRed`there was an error`);
+          cb(e);
+        }
+      });
+  }));
 
 app.get("/auth/google", passport.authenticate("google", { scope }));
 
@@ -128,11 +157,9 @@ app.get("/auth/google/callback",
   },
 );
 
-app.get("/api/user", ensureLogin, (req, res) => {
-  res.send(req.user);
-});
+app.get("/api/user", ensureLogin, (req, res) => res.send(scrubUser(req.user)));
 
-app.get("/api/stock/:ticker", (req, res) => {
+app.get("/api/stock/:ticker", ensureLogin, (req, res) => {
   const includeChart = req.query.chart == null ? false : Boolean(req.query.chart);
   const includeNews = req.query.news == null ? false : Boolean(req.query.news);
   const { ticker } = req.params;
@@ -296,7 +323,7 @@ app.get("/api/users", ensureLogin, (req, res) => {
     .catch(createHandler(res));
 });
 
-app.get("/api/stocks/search/:query", (req, res) => {
+app.get("/api/stocks/search/:query", ensureLogin, async (req, res) => {
   const { query } = req.params;
   if (!query) {
     res.status(400).send(errorWrapper("Must provide a query"));
@@ -326,24 +353,9 @@ app.get("/api/stocks/search/:query", (req, res) => {
 });
 
 app.get("/", (req, res) => res.redirect("/login"));
-
-app.get("/login", (req, res) => {
-  if (req.user) {
-    res.redirect("/dashboard.html");
-  } else {
-    res.redirect("/login.html");
-  }
-});
-
-app.get("/dashboard", (req, res) => {
-  console.log("getting db");
-  if (req.user) {
-    res.redirect("/dashboard.html");
-  } else {
-    res.redirect("/login.html");
-  }
-});
-app.get("/logout", (req, res) => {
+// app.get("/dashboard", ensureLogin, sendFile("dashboard.html"));
+app.get("/dashboard", ensureLogin, (req, res) => res.redirect("/api/user"));
+app.get("/logout", ensureLogin, (req, res) => {
   req.logout();
   res.redirect("/login");
 });
