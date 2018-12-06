@@ -53,7 +53,6 @@ const errorWrapper = str => ({ error: str });
 
 const notLoggedIn = req => !req.user;
 const currentFileIsHtml = req => /.html$/.test(req.path);
-// I'm well aware that I can use `!!`
 const redirect2Login = res => res.status(401).redirect("/login");
 function noHTMLWithoutLogin(req, res, next) {
   if (notLoggedIn(req) && currentFileIsHtml(req)) {
@@ -162,7 +161,8 @@ passport.use(
         cb(fetchError);
       }
     }
-  }));
+  }),
+);
 
 app.get("/auth/google", passport.authenticate("google", { scope }));
 
@@ -242,7 +242,9 @@ app.get("/api/buy/:ticker", ensureLogin, (req, res) => {
         req.user.money -= price * amount;
         return users.put(req.user);
       }
-      if (!req.user.stocks) req.user.stocks = [];
+      if (!req.user.stocks) {
+        req.user.stocks = [];
+      }
       stock = {
         ticker,
         price,
@@ -377,3 +379,4 @@ app.get("/logout", ensureLogin, (req, res) => {
 });
 
 app.listen(config.port, () => console.log(`Serving on port ${config.port}!`));
+/* eslint-disable */
