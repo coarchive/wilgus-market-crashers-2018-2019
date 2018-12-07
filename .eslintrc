@@ -11,6 +11,7 @@
     "no-param-reassign": "off",
     "no-multi-assign": "off",
     "indent": ["error", 2],
+    "import/order": "off",
     "no-return-assign": 1,
     "no-plusplus": "off",
     "no-console": "off",
