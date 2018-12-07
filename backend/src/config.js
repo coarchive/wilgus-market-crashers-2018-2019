@@ -5,7 +5,9 @@ const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "
 
 const publicURL = `${config.publicURL}:${config.port}`;
 const scope = config.gscope;
-const { clientID, secret, port } = config;
+const {
+  clientID, secret, port, clientSecret,
+} = config;
 
 export {
   publicURL,
@@ -13,5 +15,6 @@ export {
   clientID,
   secret,
   port,
+  clientSecret,
   config,
 };
