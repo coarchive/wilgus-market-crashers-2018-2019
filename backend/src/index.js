@@ -1,30 +1,30 @@
-import express from "express";
-import passport from "passport";
-import session from "express-session";
-import cookie from "cookie-parser";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import path from "path";
 import fs from "fs";
-import PouchDB from "pouchdb";
-import { google } from "googleapis";
-import fetch from "node-fetch";
-import { IEXClient } from "iex-api";
-// import pfind from "pouchdb-find";
-import morgan from "morgan";
-import { parse as jsonParse } from "JSONStream";
+import path from "path";
 import chalk from "chalk";
+import morgan from "morgan";
+import express from "express";
+import PouchDB from "pouchdb";
+import fetch from "node-fetch";
+import passport from "passport";
+import cookie from "cookie-parser";
+import { google } from "googleapis";
+import { IEXClient } from "iex-api";
+import session from "express-session";
 import { sync as rimraf } from "rimraf";
+import { parse as jsonParse } from "JSONStream";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+// that's OCD
 
 function scrubUser(user) {
   // contrary to it's name, scrubUser does not scrub the user information from the database
-  // it just removed
+  // it just removes things like tokens and other private items I guess
   const userCopy = Object.assign({}, user);
+  // object assign because we don't want to mutate the user object
   delete userCopy.tokens;
   delete userCopy._rev;
   delete userCopy._id;
   return userCopy;
 }
-// PouchDB.plugin(pfind);
 if (fs.existsSync("./users")) {
   console.log(chalk.bgYellow.black`./users exists`);
   rimraf("./users");
