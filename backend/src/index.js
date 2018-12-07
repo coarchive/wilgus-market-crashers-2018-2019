@@ -1,28 +1,30 @@
-import express from "express";
-import passport from "passport";
-import session from "express-session";
-import cookie from "cookie-parser";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import path from "path";
 import fs from "fs";
-import PouchDB from "pouchdb";
-import { google } from "googleapis";
-import fetch from "node-fetch";
-import { IEXClient } from "iex-api";
-// import pfind from "pouchdb-find";
-import morgan from "morgan";
-import { parse as jsonParse } from "JSONStream";
+import path from "path";
 import chalk from "chalk";
+import morgan from "morgan";
+import express from "express";
+import PouchDB from "pouchdb";
+import fetch from "node-fetch";
+import passport from "passport";
+import cookie from "cookie-parser";
+import { google } from "googleapis";
+import { IEXClient } from "iex-api";
+import session from "express-session";
 import { sync as rimraf } from "rimraf";
+import { parse as jsonParse } from "JSONStream";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+// that's OCD
 
 function scrubUser(user) {
+  // contrary to it's name, scrubUser does not scrub the user information from the database
+  // it just removes things like tokens and other private items I guess
   const userCopy = Object.assign({}, user);
+  // object assign because we don't want to mutate the user object
   delete userCopy.tokens;
   delete userCopy._rev;
   delete userCopy._id;
   return userCopy;
 }
-// PouchDB.plugin(pfind);
 if (fs.existsSync("./users")) {
   console.log(chalk.bgYellow.black`./users exists`);
   rimraf("./users");
@@ -51,7 +53,6 @@ const errorWrapper = str => ({ error: str });
 
 const notLoggedIn = req => !req.user;
 const currentFileIsHtml = req => /.html$/.test(req.path);
-// I'm well aware that I can use `!!`
 const redirect2Login = res => res.status(401).redirect("/login");
 function noHTMLWithoutLogin(req, res, next) {
   if (notLoggedIn(req) && currentFileIsHtml(req)) {
@@ -153,16 +154,15 @@ passport.use(
         console.log(chalk.green`Email OK`);
         user.type = /\d/.test(email) ? "student" : "teacher";
         // cgannon19@dtechhs.org is a student while mmizel@dtechhs.org is a teacher / non student
-        user.newField = "truefalse";
         user.profilePictureURL = data.photos.filter(v => v.metadata.primary)[0].url || "cannot find";
-        await putUser(user, cb);
-        cb(null, user);
+        putUser(user, cb);
       } catch (fetchError) {
         console.log(chalk.bgRed`Error fetching data from Google`);
         cb(fetchError);
       }
     }
-  }));
+  }),
+);
 
 app.get("/auth/google", passport.authenticate("google", { scope }));
 
@@ -242,7 +242,9 @@ app.get("/api/buy/:ticker", ensureLogin, (req, res) => {
         req.user.money -= price * amount;
         return users.put(req.user);
       }
-      if (!req.user.stocks) req.user.stocks = [];
+      if (!req.user.stocks) {
+        req.user.stocks = [];
+      }
       stock = {
         ticker,
         price,
@@ -377,3 +379,4 @@ app.get("/logout", ensureLogin, (req, res) => {
 });
 
 app.listen(config.port, () => console.log(`Serving on port ${config.port}!`));
+/* eslint-disable */
