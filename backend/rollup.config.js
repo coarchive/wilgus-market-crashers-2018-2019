@@ -1,5 +1,4 @@
 import resolve from "rollup-plugin-node-resolve";
-import commonjs from "rollup-plugin-commonjs";
 import babel from "rollup-plugin-babel";
 import run from "rollup-plugin-run";
 import { join } from "path";
@@ -12,7 +11,6 @@ export default {
   },
   plugins: [
     resolve(),
-    commonjs(),
     babel({
       exclude: "node_modules/**",
     }),
@@ -20,7 +18,7 @@ export default {
       cwd: join(__dirname, "..", "dist"),
     }),
   ],
-  external: filePath => !filePath.startsWith("."),
+  external: filePath => !filePath.startsWith(".") && !filePath.includes("crasher/backend/src"),
   watch: {
     clearScreen: false,
   },

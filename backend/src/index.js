@@ -9,42 +9,11 @@ import PouchDB from "pouchdb";
 import { google } from "googleapis";
 import fetch from "node-fetch";
 import { IEXClient } from "iex-api";
-import pfind from "pouchdb-find";
+// import pfind from "pouchdb-find";
 import morgan from "morgan";
 import { parse as jsonParse } from "JSONStream";
-
-PouchDB.plugin(pfind);
-
-const app = express();
-const users = new PouchDB("users");
-const iex = new IEXClient(fetch);
-
-const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
-const publicURL = `${config.publicURL}:${config.port}`;
-const scope = [
-  "profile",
-  "https://www.googleapis.com/auth/userinfo.email",
-  "https://www.googleapis.com/auth/userinfo.profile",
-];
-
-function createHandler(res) {
-  return err => {
-    console.error(err); // eslint-disable-line no-console
-    if (err.statusCode) {
-      return res.status(err.statusCode).send(err.statusText || "External server error");
-    }
-    return res.status(500).send(`Internal server error: ${JSON.stringify(err)}`);
-  };
-}
-const error = str => ({ error: str });
-
-function ensureLogin(req, res, next) {
-  if (req.user) {
-    next();
-  } else {
-    res.status(401).send(error("Unauthorized"));
-  }
-}
+import chalk from "chalk";
+import { sync as rimraf } from "rimraf";
 
 function scrubUser(user) {
   const userCopy = Object.assign({}, user);
@@ -53,9 +22,49 @@ function scrubUser(user) {
   delete userCopy._id;
   return userCopy;
 }
+// PouchDB.plugin(pfind);
+if (fs.existsSync("./users")) {
+  console.log(chalk.bgYellow.black`./users exists`);
+  rimraf("./users");
+  console.log(chalk.green`Removed ./users`);
+}
+const users = new PouchDB("users");
 
-app.use(express.static(path.join(__dirname, "public"), { index: false }));
+const iex = new IEXClient(fetch);
+const app = express();
+
+const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
+
+const publicURL = `${config.publicURL}:${config.port}`;
+const scope = config.gscope;
+
+function createHandler(res) {
+  return err => {
+    console.error(err);
+    if (err.statusCode) {
+      return res.status(err.statusCode).send(err.statusText || "External server error");
+    }
+    return res.status(500).send(`Internal server error: ${JSON.stringify(err)}`);
+  };
+}
+const errorWrapper = str => ({ error: str });
+
+const notLoggedIn = req => !req.user;
+const currentFileIsHtml = req => /.html$/.test(req.path);
+// I'm well aware that I can use `!!`
+const redirect2Login = res => res.status(401).redirect("/login");
+function noHTMLWithoutLogin(req, res, next) {
+  if (notLoggedIn(req) && currentFileIsHtml(req)) {
+    console.log(chalk.bgRed("Serving HTML not allowed without auth!"));
+    redirect2Login(res);
+  }
+  next();
+}
+const ensureLogin = (req, res, next) => (notLoggedIn(req) ? redirect2Login(res) : next());
+const publicPath = path.join(__dirname, "public");
+const sendFile = fileName => (_, res) => res.sendFile(path.join(publicPath, fileName));
 app.use(cookie());
+// parse cookies
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: config.secret,
@@ -65,64 +74,95 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(morgan("tiny"));
+// log everything
+app.get("/login", sendFile("login.html"));
+// maybe serve the login pages
+app.use(noHTMLWithoutLogin);
+app.use(express.static(publicPath, { index: false }));
 
 passport.serializeUser((user, done) => done(null, user._id));
 passport.deserializeUser((id, done) => users.get(id).then(user => done(null, user)).catch(done));
 
-passport.use(new GoogleStrategy({
-  clientID: config.clientID,
-  clientSecret: config.clientSecret,
-  callbackURL: `${publicURL}/auth/google/callback`,
-}, (accessToken, refreshToken, profile, cb) => {
-  const client = new google.auth.OAuth2();
-  client.setCredentials({
-    access_token: accessToken,
-    refresh_token: refreshToken,
-  });
-  const people = google.people({
-    version: "v1",
-    auth: client,
-  });
-  users.get(profile.id)
-    .then(user => {
+async function putUser(user, cb) {
+  try {
+    await users.put(user);
+    cb(null, user);
+  } catch (putError) {
+    console.log(chalk.bgRed`pouchdb put error!`);
+    cb(putError);
+  }
+}
+passport.use(
+  new GoogleStrategy({
+    clientID: config.clientID,
+    clientSecret: config.clientSecret,
+    callbackURL: `${publicURL}/auth/google/callback`,
+  },
+  async (accessToken, refreshToken, profile, cb) => {
+    const client = new google.auth.OAuth2();
+    client.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    const people = google.people({
+      version: "v1",
+      auth: client,
+    });
+    try {
+      const user = await users.get(profile.id);
+      // check database
       user.tokens.accessToken = accessToken;
       user.tokens.refreshToken = refreshToken;
-      users.put(user).then(() => cb(null, user)).catch(cb);
-    })
-    .catch(err => {
-      if (err.status === 404) {
-        const user = {
-          _id: profile.id,
-          name: profile.displayName,
-          tokens: {
-            accessToken, refreshToken,
-          },
-          stocks: [],
-          money: 0,
-          history: [],
-        };
-        people.people.get({
-          resourceName: "people/me",
-          personFields: "emailAddresses",
-        }).then(({ data }) => {
-          const email = data.emailAddresses[0].value;
-          user.email = email;
-          if (email.slice(email.indexOf("@")) !== "@dtechhs.org") {
-            const e = Error("You have to login with an @dtechhs.org email.");
-            e.name = "ArtificialRestriction";
-            return Promise.reject(e);
-          }
-          user.type = /\d/.test(email) ? "student" : "teacher";
-          return users.put(user);
-        }).then(() => cb(null, user)).catch(err => {
-          console.error(err);
-          cb(err);
-        });
+      putUser(user);
+      // no need to await since there's no more code that executes in this function
+    } catch (userError) {
+      // if fetching the user fails
+      if (userError.status !== 404) {
+        // wasn't expecting this error
+        cb(userError);
         return;
       }
-      cb(err);
-    });
-}));
+      console.log(chalk.yellow`Failed to find user within the database`);
+      // the user wasn't found in the db
+      const user = {
+        _id: profile.id,
+        name: profile.displayName,
+        tokens: {
+          accessToken, refreshToken,
+        },
+        stocks: [],
+        money: 0,
+        history: [],
+      };
+      console.log(chalk.cyan`Making new user Object`);
+      // as the code continues, this object is going to be mutated
+      // it will then be stored in the database
+      try {
+        const { data } = await people.people.get({
+          resourceName: "people/me",
+          personFields: "emailAddresses,photos",
+        });
+        const email = data.emailAddresses.filter(v => v.metadata.primary && v.metadata.verified)[0].value;
+        user.email = email;
+        if (email.slice(email.indexOf("@")) !== "@dtechhs.org") {
+          const aEError = Error("You have to login with an @dtechhs.org email.");
+          aEError.name = "ArtificialRestriction";
+          cb(aEError);
+          return;
+        }
+        console.log(chalk.green`Email OK`);
+        user.type = /\d/.test(email) ? "student" : "teacher";
+        // cgannon19@dtechhs.org is a student while mmizel@dtechhs.org is a teacher / non student
+        user.newField = "truefalse";
+        user.profilePictureURL = data.photos.filter(v => v.metadata.primary)[0].url || "cannot find";
+        await putUser(user, cb);
+        cb(null, user);
+      } catch (fetchError) {
+        console.log(chalk.bgRed`Error fetching data from Google`);
+        cb(fetchError);
+      }
+    }
+  }));
 
 app.get("/auth/google", passport.authenticate("google", { scope }));
 
@@ -130,18 +170,17 @@ app.get("/auth/google/callback",
   passport.authenticate("google", { scopes: ["profile"], failureRedirect: "/login" }),
   (req, res) => {
     res.redirect("/dashboard");
-  });
+  },
+);
 
-app.get("/api/user", ensureLogin, (req, res) => {
-  res.send(req.user);
-});
+app.get("/api/user", ensureLogin, (req, res) => res.send(scrubUser(req.user)));
 
-app.get("/api/stock/:ticker", (req, res) => {
+app.get("/api/stock/:ticker", ensureLogin, (req, res) => {
   const includeChart = req.query.chart == null ? false : Boolean(req.query.chart);
   const includeNews = req.query.news == null ? false : Boolean(req.query.news);
   const { ticker } = req.params;
   if (!ticker || ticker !== ticker.toString()) {
-    res.status(400).send(error("Invalid or missing ticker"));
+    res.status(400).send(errorWrapper("Invalid or missing ticker"));
     return;
   }
   const stock = {};
@@ -171,9 +210,9 @@ app.get("/api/stock/:ticker", (req, res) => {
 
 app.get("/api/buy/:ticker", ensureLogin, (req, res) => {
   const { ticker } = req.params;
-  const amount = req.query.amount == null ? 1 : +req.query.amount;
+  const amount = req.query.amount == null ? 1 : Number(req.query.amount);
   if (!Number.isInteger(amount)) {
-    res.status(400).send(error("Amount must be an integer"));
+    res.status(400).send(errorWrapper("Amount must be an integer"));
   }
   const stocks = req.user.stocks.filter(stock => stock.ticker === ticker);
   if (stocks.length > 1) {
@@ -183,7 +222,7 @@ app.get("/api/buy/:ticker", ensureLogin, (req, res) => {
   iex.stockPrice(ticker)
     .then(price => {
       if (price === "Unknown symbol") {
-        res.status(400).send(error(price));
+        res.status(400).send(errorWrapper(price));
         return false;
       }
       const onMargin = req.user.money < price * amount;
@@ -196,7 +235,7 @@ app.get("/api/buy/:ticker", ensureLogin, (req, res) => {
       });
       if (stock) {
         if (onMargin) {
-          res.status(400).send(error("Not enough money")); // TODO: Buy the same stock on and off margin
+          res.status(400).send(errorWrapper("Not enough money")); // TODO: Buy the same stock on and off margin
           return false;
         }
         stock.amount += amount;
@@ -221,7 +260,7 @@ app.get("/api/sell/:ticker", ensureLogin, (req, res) => {
   const { ticker } = req.params;
   const amount = req.query.amount == null ? 1 : +req.query.amount;
   if (!Number.isInteger(amount)) {
-    res.status(400).send(error("Amount must be an integer"));
+    res.status(400).send(errorWrapper("Amount must be an integer"));
   }
   let idx;
   const stocks = req.user.stocks.filter((stock, i) => {
@@ -232,14 +271,14 @@ app.get("/api/sell/:ticker", ensureLogin, (req, res) => {
     return false;
   });
   if (stocks.length === 0) {
-    req.status(400).send(error(`User doesn't have stock "${ticker}"`));
+    req.status(400).send(errorWrapper(`User doesn't have stock "${ticker}"`));
   }
   if (stocks.length !== 1) {
     throw new Error("ERROR: Database Corrupt");
   }
   const stock = stocks[0];
   if (stock.amount < amount) {
-    res.status(400).send(error("Cannot sell more than owned"));
+    res.status(400).send(errorWrapper("Cannot sell more than owned"));
   }
   iex.stockPrice(ticker)
     .then(price => {
@@ -277,7 +316,7 @@ app.get("/api/user/:email", ensureLogin, (req, res) => {
     if (result.docs.length === 1) {
       res.send(scrubUser(result.docs[0]));
     } else if (result.docs.length === 0) {
-      res.status(404).send(error(`No user with email ${email}`));
+      res.status(404).send(errorWrapper(`No user with email ${email}`));
     } else {
       throw new Error("ERROR: Database Corrupt");
     }
@@ -287,7 +326,7 @@ app.get("/api/user/:email", ensureLogin, (req, res) => {
 app.get("/api/users", ensureLogin, (req, res) => {
   const limit = req.query.limit == null ? 1 : +req.query.limit;
   if (!Number.isInteger(limit)) {
-    res.status(400).send(error("limit must be an integer"));
+    res.status(400).send(errorWrapper("limit must be an integer"));
   }
   users.find({
     selector: {
@@ -300,10 +339,10 @@ app.get("/api/users", ensureLogin, (req, res) => {
     .catch(createHandler(res));
 });
 
-app.get("/api/stocks/search/:query", (req, res) => {
+app.get("/api/stocks/search/:query", ensureLogin, async (req, res) => {
   const { query } = req.params;
   if (!query) {
-    res.status(400).send(error("Must provide a query"));
+    res.status(400).send(errorWrapper("Must provide a query"));
   }
   fetch("https://api.iextrading.com/1.0/ref-data/symbols").then(result => {
     const stream = result.body.pipe(jsonParse("*"));
@@ -318,7 +357,7 @@ app.get("/api/stocks/search/:query", (req, res) => {
       }
     });
     result.body.on("error", err => {
-      res.status(500).send(error(`Internal server error: ${err}`));
+      res.status(500).send(errorWrapper(`Internal server error: ${err}`));
       success = false;
     });
     result.body.on("finish", () => {
@@ -330,26 +369,11 @@ app.get("/api/stocks/search/:query", (req, res) => {
 });
 
 app.get("/", (req, res) => res.redirect("/login"));
-
-app.get("/login", (req, res) => {
-  if (req.user) {
-    res.redirect("/dashboard.html");
-  } else {
-    res.redirect("/login.html");
-  }
-});
-
-app.get("/dashboard", (req, res) => {
-  console.log("getting db");
-  if (req.user) {
-    res.redirect("/dashboard.html");
-  } else {
-    res.redirect("/login.html");
-  }
-});
-app.get("/logout", (req, res) => {
+// app.get("/dashboard", ensureLogin, sendFile("dashboard.html"));
+app.get("/dashboard", ensureLogin, (req, res) => res.redirect("/api/user"));
+app.get("/logout", ensureLogin, (req, res) => {
   req.logout();
   res.redirect("/login");
 });
 
-app.listen(config.port, () => console.log("Ready!")); // eslint-disable-line no-console
+app.listen(config.port, () => console.log(`Serving on port ${config.port}!`));
