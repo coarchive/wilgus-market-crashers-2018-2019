@@ -1,12 +1,15 @@
-import fs from "fs";
-import path from "path";
+import { readFileSync } from "fs";
+import { join } from "path";
 
-const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
+const config = JSON.parse(readFileSync(join(__dirname, "config.json"), "utf8"));
 
 const publicURL = `${config.publicURL}:${config.port}`;
 const scope = config.gscope;
 const {
-  clientID, secret, port, clientSecret,
+  clientID,
+  secret,
+  port,
+  clientSecret,
 } = config;
 
 export {

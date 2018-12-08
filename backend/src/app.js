@@ -58,6 +58,7 @@ app.get("/api/stock/:ticker", stocks.get);
 app.get("/api/stocks/search/:query", stocks.search);
 // app.get("/dashboard", ensureLogin, sendFile("dashboard.html"));
 app.get("/dashboard", (req, res) => res.redirect("/api/user"));
+// for development only!
 app.get("/logout", (req, res) => {
   req.logout();
   res.redirect("/login");
