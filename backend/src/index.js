@@ -1,6 +1,8 @@
 import fs from "fs";
-import chalk from "chalk";
 import app from "./app";
+import chalk from "chalk";
+import { sync as rimraf } from "rimraf";
+import { port } from "./config";
 // DEVELOPMENT ONLY!
 // remove the database every time the app starts
 

@@ -128,6 +128,10 @@ export async function sell(req, res) {
   }
 }
 
+const symbolsURL = "https://api.iextrading.com/1.0/ref-data/symbols";
+async function fetchSearchData() {
+
+}
 export async function search(req, res) {
   const { query } = req.params;
   if (!query) {
