@@ -36,7 +36,7 @@ app.use(morgan("tiny"));
 app.get("/", (req, res) => res.redirect("/login"));
 app.get("/login", sendFile("login.html"));
 // maybe serve the login pages before we get angEry about the html
-app.use(noHTMLWithoutLogin);
+// app.use(noHTMLWithoutLogin);
 app.use(express.static(publicPath, { index: false }));
 passport.serializeUser(serializeUser);
 passport.deserializeUser(deserializeUser);

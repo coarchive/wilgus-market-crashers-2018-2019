@@ -6,9 +6,9 @@ import { port } from "./config";
 // DEVELOPMENT ONLY!
 // remove the database every time the app starts
 
-if (fs.existsSync("./users")) {
-  console.log(chalk.bgYellow.black`./users exists`);
-  rimraf("./users");
-  console.log(chalk.green`Removed ./users`);
-}
+// if (fs.existsSync("./users")) {
+//   console.log(chalk.bgYellow.black`./users exists`);
+//   rimraf("./users");
+//   console.log(chalk.green`Removed ./users`);
+// }
 app.listen(port, () => console.log(`Serving on port ${port}!`));
