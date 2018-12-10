@@ -11,7 +11,7 @@ const money_e = geti("money");
 const stocks_e = geti("stocks");
 const history_e = geti("history");
 const ppBuy = ["Bought", "Spent"];
-const ppSell = ["Sold", "Made"];
+const ppSell = ["Sold", "Made"];``
 fetch("/api/user")
   .then(res => res.json())
   .then(user => {

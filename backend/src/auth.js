@@ -23,7 +23,7 @@ export const strategy = new GoogleStrategy({
     // check database
     user.tokens.accessToken = accessToken;
     user.tokens.refreshToken = refreshToken;
-    putUser(user);
+    putUser(user, cb);
     // no need to await since there's no more code that executes in this function
   } catch (userError) {
     // if fetching the user fails
