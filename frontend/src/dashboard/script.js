@@ -4,14 +4,12 @@ import {
 
 const linkStock = ticker => link(`/stock.html?stock=${ticker}`, ticker);
 const formatMoney = m => Math.round(m * 100) / 100;
-const welcome_e = geti("welcome");
-const first_name_e = geti("first-name");
-const last_name_e = geti("last-name");
-const money_e = geti("money");
-const stocks_e = geti("stocks");
-const history_e = geti("history");
-const ppBuy = ["Bought", "Spent"];
-const ppSell = ["Sold", "Made"];``
+class StockData {
+  
+}
+function init() {
+
+}
 fetch("/api/user")
   .then(res => res.json())
   .then(user => {

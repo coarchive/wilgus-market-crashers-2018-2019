@@ -1,17 +1,35 @@
-import { IEXClient } from "iex-api";
-import { errorWrapper, handleError, promiseObjectAll } from "../utils";
-import { users/* , cacheStocks */ } from "../database";
-import { parse as jsonParse } from "JSONStream";
+import chalk from "chalk";
 import fetch from "node-fetch";
+import { IEXClient } from "iex-api";
+import { users } from "../database";
+import { existsSync, writeFileSync, promises } from "fs";
+import { errorWrapper, handleError, promiseObjectAll } from "../utils";
+
+const { readFile } = promises;
+const symbolsURL = "https://api.iextrading.com/1.0/ref-data/symbols";
+const IEX_symbol_cache = "symbols.json";
+const IEX_symbol_to_array = ({
+  symbol, name, type,
+}) => [symbol, name, type];
+
+(async () => {
+  if (!existsSync(IEX_symbol_cache)) {
+    console.log(chalk.yellow`Downloading IEXSymbols!`);
+    const symbolArray = await fetch(symbolsURL).then(res => res.json());
+    const convertedSymbols = symbolArray.map(IEX_symbol_to_array);
+    writeFileSync(IEX_symbol_cache, JSON.stringify(convertedSymbols));
+    console.log(chalk.yellow`Finished downloading IEXSymbols!`);
+  } else {
+    console.log(chalk.bgGreen`IEXSymbols already downloaded!`);
+  }
+})();
 
 const iex = new IEXClient(fetch);
 
 export async function get(req, res) {
   const includeChart = req.query.chart == null ? false : Boolean(req.query.chart);
   const includeNews = req.query.news == null ? false : Boolean(req.query.news);
-  const {
-    ticker,
-  } = req.params;
+  const { ticker } = req.params;
   if (!ticker || ticker !== ticker.toString()) {
     res.status(400).send(errorWrapper("Invalid or missing ticker"));
     return;
@@ -128,34 +146,20 @@ export async function sell(req, res) {
   }
 }
 
-const symbolsURL = "https://api.iextrading.com/1.0/ref-data/symbols";
-async function fetchSearchData() {
-
-}
 export async function search(req, res) {
   const { query } = req.params;
   if (!query) {
     res.status(400).send(errorWrapper("Must provide a query"));
   }
   try {
-    const result = await fetch("https://api.iextrading.com/1.0/ref-data/symbols");
-    const stream = result.body.pipe(jsonParse("*"));
-    const stocks = [];
-    let success = true;
-    stream.on("data", data => {
-      if (
-        data.symbol.toLowerCase().includes(query.toLowerCase())
-        || data.name.toLowerCase().includes(query.toLowerCase())
-      ) {
-        stocks.push(data);
-      }
-    });
-    result.body.on("error", err => {
-      res.status(500).send(errorWrapper(`Internal server error: ${err}`));
-      success = false;
-    });
-    result.body.on("finish", () => success && res.send({ stocks, query }));
+    const result = await readFile(IEX_symbol_cache);
+    const stocks = ["foobar"];
+    res.send({ stocks, query });
   } catch (err) {
     handleError(res, err);
   }
+}
+
+export async function symbols(req, res) {
+  res.send(JSON.parse(await readFile(IEX_symbol_cache, "utf8")));
 }
