@@ -8,7 +8,12 @@
     "url": "https://github.com/legodude17/crasher"
   },
   "keywords": [],
-  "author": "legodude17, Coalpha",
+  "author": "legodude17",
+  "contributors": [
+    {
+      "name": "Cole Gannon"
+    }
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/legodude17/crasher/issues"
@@ -17,8 +22,7 @@
   "devDependencies": {
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^13.1.0",
-    "eslint-plugin-import": "^2.14.0",
-    "go-out": "^0.3.0"
+    "eslint-plugin-import": "^2.14.0"
   },
   "scripts": {
     "start": "bash sh.sh start",
