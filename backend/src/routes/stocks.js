@@ -4,16 +4,20 @@ import { IEXClient } from "iex-api";
 import { users } from "../database";
 import { existsSync, writeFileSync, promises } from "fs";
 import { errorWrapper, handleError, promiseObjectAll } from "../utils";
+import { Stock } from "../../../shared/classes";
 
+new Stock();
 const { readFile } = promises;
 const symbolsURL = "https://api.iextrading.com/1.0/ref-data/symbols";
 const IEX_symbol_cache = "symbols.json";
 const IEX_symbol_to_array = ({
   symbol, name, type,
 }) => [symbol, name, type];
+const resUndefined = Promise.resolve(undefined);
 
 (async () => {
   if (!existsSync(IEX_symbol_cache)) {
+    // check if we've cached the symbols
     console.log(chalk.yellow`Downloading IEXSymbols!`);
     const symbolArray = await fetch(symbolsURL).then(res => res.json());
     const convertedSymbols = symbolArray.map(IEX_symbol_to_array);
@@ -27,20 +31,17 @@ const IEX_symbol_to_array = ({
 const iex = new IEXClient(fetch);
 
 export async function get(req, res) {
-  const includeChart = req.query.chart == null ? false : Boolean(req.query.chart);
-  const includeNews = req.query.news == null ? false : Boolean(req.query.news);
-  const { ticker } = req.params;
+  const { ticker, includeChart, includeNews } = req.params;
   if (!ticker || ticker !== ticker.toString()) {
     res.status(400).send(errorWrapper("Invalid or missing ticker"));
     return;
   }
   try {
-    const unedfined = Promise.resolve(undefined);
     const stock = await promiseObjectAll({
       company: iex.stockCompany(ticker),
       price: iex.stockPrice(ticker),
-      chart: includeChart ? iex.stockChart(ticker, "1m") : unedfined,
-      news: includeNews ? iex.stockNews(ticker, 2) : unedfined,
+      chart: includeChart ? iex.stockChart(ticker, "1m") : resUndefined,
+      news: includeNews ? iex.stockNews(ticker, 2) : resUndefined,
     });
     res.send(stock);
   } catch (err) {

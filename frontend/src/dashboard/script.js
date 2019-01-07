@@ -10,6 +10,7 @@ class StockData {
 function init() {
 
 }
+/*
 fetch("/api/user")
   .then(res => res.json())
   .then(user => {
@@ -61,3 +62,4 @@ fetch("/api/user")
     });
     Promise.all(proms).then(() => stocks_e.appendChild(stocksFragment));
   }).then(() => console.log("Fetched all data!"));
+*/
