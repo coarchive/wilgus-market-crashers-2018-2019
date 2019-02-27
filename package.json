@@ -2,34 +2,38 @@
   "name": "crasher",
   "version": "0.1.0",
   "description": "Crash the Market!",
-  "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/legodude17/crasher"
-  },
-  "keywords": [],
   "author": "legodude17",
   "contributors": [
     {
       "name": "Cole Gannon"
     }
   ],
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/legodude17/crasher/issues"
+  "dependencies": {
+    "fuzzy": "^0.1.3",
+    "morgan": "^1.9.1",
+    "rimraf": "^2.6.2",
+    "iex-api": "0.0.3",
+    "express": "^4.16.4",
+    "pouchdb": "^7.0.0",
+    "passport": "^0.4.0",
+    "JSONStream": "^1.3.5",
+    "node-fetch": "^2.3.0",
+    "googleapis": "^35.0.0",
+    "ansi-colors": "^3.2.3",
+    "cookie-parser": "^1.4.3",
+    "express-session": "^1.15.6",
+    "passport-google-oauth20": "^1.0.0"
   },
-  "homepage": "https://github.com/legodude17/crasher#readme",
   "devDependencies": {
-    "eslint": "^4.19.1",
-    "eslint-config-airbnb-base": "^13.1.0",
-    "eslint-plugin-import": "^2.14.0"
+    "@coalpha/eslint-config": "latest",
+    "eslint": "^5.14.1"
   },
   "scripts": {
     "start": "bash sh.sh start",
     "build": "bash sh.sh build",
     "push": "out --no-npm",
     "purge": "rm -rf dist/",
-    "postinstall": "bash sh.sh init"
+    "install-all": "bash sh.sh init"
   },
   "private": true
 }

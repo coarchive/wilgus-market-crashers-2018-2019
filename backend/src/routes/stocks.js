@@ -4,9 +4,7 @@ import { IEXClient } from "iex-api";
 import { users } from "../database";
 import { existsSync, writeFileSync, promises } from "fs";
 import { errorWrapper, handleError, promiseObjectAll } from "../utils";
-import { Stock } from "../../../shared/classes";
 
-new Stock();
 const { readFile } = promises;
 const symbolsURL = "https://api.iextrading.com/1.0/ref-data/symbols";
 const IEX_symbol_cache = "symbols.json";
