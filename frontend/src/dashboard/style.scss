@@ -1,0 +1,40 @@
+@import "../main.scss";
+
+$top-height: 60px;
+#app {
+  display: grid;
+  grid-template-rows: $top-height 1fr;
+  grid-template-columns: 1fr 4fr;
+  grid-template-areas:
+    "◀️ ⏫"
+    "◀️ ."
+  ;
+}
+.top {
+  grid-area: ⏫;
+  background: red;
+}
+.left {
+  grid-area: ◀️;
+  display: grid;
+  width: 100%;
+  grid-template-rows: 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
+  background: white;
+  grid-template-areas:
+    "🤔 🅰️"
+    "🤔 🅱️"
+  ;
+  @extend %shady;
+  .avatar {
+    grid-area: 🤔;
+    // background: url("../../assets/gas.bmp");
+    background: orange;
+  }
+  .firstname {
+    grid-area: 🅰️;
+  }
+  .lastname {
+    grid-area: 🅱️;
+  }
+}

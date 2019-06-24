@@ -5,28 +5,18 @@
   <meta charset="utf-8">
   <title>You're logged in!</title>
   <link rel="stylesheet" href="main.css">
-  <link rel="stylesheet" href="dashboard/style.css">
+  <link rel="stylesheet" href="dashboard/style.scss">
 </head>
 
 <body>
   <div id="app">
+    <div class="top"></div>
     <div class="left">
-      <div>
-        <div class="avatar"></div>
+      <div class="avatar">
       </div>
-      <div class="name-container">
-        <span id="first-name"></span>
-        <span id="last-name"></span>
-      </div>
-    </div>
-    <div class="right">
-      <p id="welcome"></p> <a href="stocks.html">Bowser Stocks</a>
-      <p id="money"></p>
-      <p>You have the following stocks:</p>
-      <ul id="stocks"></ul>
-      <p>Transaction History:</p>
-      <ul id="history"></ul>
-      <a href="/logout">Logout</a>
+      <span class="firstname">Ian</span>
+      <span class="lastname">Colgan</span>
+
     </div>
     <script src="dashboard/script.js"></script>
   </div>

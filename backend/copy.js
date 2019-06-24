@@ -1,47 +1,37 @@
-const fs = require("fs");
-const chalk = require("chalk");
+const c = require("ansi-colors");
 const { join } = require("path");
-const { exec } = require("child_process");
-require("console-group").install();
-// this file runs in projectRoot/backend/
 
-const fsp = fs.promises;
-const dist = join(__dirname, "..", "dist");
-// projectRoot/dist
+const {
+  existsSync, writeFileSync, promises: { copyFile, readFile }
+} = require("fs");
+
+// directories
+const backend = __dirname;
+const projectRoot = join(backend, "..");
+const dist = join(projectRoot, "dist");
+
 const copied = join(dist, ".copied");
-if (fs.existsSync(copied)) {
+if (existsSync(copied)) {
   process.exit(0);
 }
-console.group(chalk.yellow`Setting up dist!`);
+const log = (msg, path) => console.log(c.yellow(msg[0]) + c.cyan(path));
+// files
+const backendPackageJSON = join(backend, "package.json");
+const backendConfigJSON = join(backend, "config.json");
+const distPackageJSON = join(dist, "package.json");
+const distConfigJSON = join(dist, "config.json");
+
+log`Setting up ${dist}`;
+const { parse, stringify } = JSON;
 Promise.all([
-  fsp.readFile(join(__dirname, "package.json"), "utf8")
-    .then(JSON.parse)
-    .then(({
-      buildDependencies,
-      dependencies,
-      version,
-      name,
-    }) => {
-      fs.writeFileSync(
-        join(dist, "package.json"),
-        JSON.stringify({
-          dependencies: Object.assign(buildDependencies, dependencies),
-          name,
-          version,
-        }),
-      );
-    })
-    .then(() => {
-      console.log(chalk.green`Finished setting up dist/package.json`);
-    }),
-  fsp.copyFile(join(__dirname, "config.json"), join(dist, "config.json")),
-])
-  .then(() => {
-    console.log(chalk.green`Copied config.json`);
-    fs.writeFileSync(copied);
-    console.log(chalk.yellow`Installing Modules`);
-    exec("npm i --no-audit", dist);
-    exec("npm i --no-audit", dist);
-    console.groupEnd();
-    process.exit(0);
-  });
+  readFile(backendPackageJSON, "utf8")
+    .then(parse)
+    .then(({ version, name }) => writeFileSync(distPackageJSON, stringify({name, version})))
+    .then(() => log`Finished setting up ${distPackageJSON}`),
+  copyFile(backendConfigJSON, distConfigJSON)
+    .then(() => console.log(c.cyan(backendConfigJSON) + c.yellow(" => ") + c.cyan(distConfigJSON)))
+]).then(() => {
+  writeFileSync(copied);
+  log`Wrote ${copied}`;
+  process.exit(0);
+});

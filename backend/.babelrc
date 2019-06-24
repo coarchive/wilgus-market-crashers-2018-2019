@@ -1,8 +1,12 @@
 {
   "presets": [
-    ["@babel/env", {
-      "targets": "current node",
-      "modules": false
-    }]
+    [
+      "@babel/env",
+      {
+        "targets": "current node",
+        "modules": false
+      }
+    ],
+    "@babel/typescript",
   ]
 }
