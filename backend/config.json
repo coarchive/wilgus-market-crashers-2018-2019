@@ -3,5 +3,6 @@
   "clientSecret": "1z4wqMR-2uwPhRFGxDfWcFmS",
   "publicURL": "http://localhost",
   "port": 8000,
-  "secret": "wilgubeast"
+  "secret": "wilgubeast",
+  "scope": "profile"
 }

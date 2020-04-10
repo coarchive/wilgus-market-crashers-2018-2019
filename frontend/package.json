@@ -2,16 +2,16 @@
   "name": "frontend",
   "version": "0.0.0",
   "devDependencies": {
-    "@babel/core": "^7.3.4",
-    "@babel/preset-env": "^7.3.4",
-    "parcel-bundler": "^1.11.0",
-    "sass": "^1.17.2"
+    "@babel/core": "^7.9.0",
+    "@babel/preset-env": "^7.9.5",
+    "parcel-bundler": "^1.12.4",
+    "sass": "^1.26.3"
   },
   "scripts": {
     "start": "parcel watch --cache-dir='../dist/.cache' --out-dir='../dist/public' src/*.html",
     "build": "parcel build --cache-dir='../dist/.cache' --out-dir='../dist/public' src/*.html"
   },
   "dependencies": {
-    "chart.js": "^2.7.2"
+    "chart.js": "^2.9.3"
   }
 }
